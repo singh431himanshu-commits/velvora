@@ -1,20 +1,66 @@
+const SUPABASE_URL = "https://tkllbmlcsrcxdwpbbleb.supabase.co";
+const SUPABASE_KEY = "sb_publishable_CHZd1TBq8DzM-ZUfgQJpOA_Ukjmiv6V";
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 let cart = [];
 let wishlist = JSON.parse(localStorage.getItem('velvora_wishlist')) || [];
 let selectedSize = null;
 let selectedColor = null;
 let currentProductPhotos = [];
+let globalCachedProducts = []; // क्लाउड डेटा रखने के लिए ग्लोबल वेरिएबल
 
 let currentUser = JSON.parse(localStorage.getItem('velvora_current_user')) || null;
 
-window.addEventListener('DOMContentLoaded', () => {
-    renderProducts(getAiSortedProducts(getProducts()));
+window.addEventListener('DOMContentLoaded', async () => {
     switchTab('desc');
     initSearchEngine();
     updateUserNavUi();
+    await fetchLiveProducts(); // Supabase से डेटा लोड करें
 });
 
+// Supabase से लाइव प्रोडक्ट्स डाउनलोड करने का फ़ंक्शन
+async function fetchLiveProducts() {
+    const grid = document.getElementById('products-grid');
+    if(grid) grid.innerHTML = `<div class="col-span-4 text-center text-gray-400 py-12 font-bold text-xs">Loading live vault collection...</div>`;
+
+    const { data: products, error } = await _supabase.from('products').select('*');
+    if (error) {
+        console.error("Error fetching live products:", error);
+        if(grid) grid.innerHTML = `<div class="col-span-4 text-center text-red-500 py-12 font-bold text-xs">Failed to synchronize catalog stack.</div>`;
+        return;
+    }
+
+    // डेटा को पुराने लोकल स्टोरेज फॉर्मेट में ढाला गया ताकि आपका पुराना कोड क्रैश न हो
+    globalCachedProducts = products.map(p => {
+        let imgArray = [];
+        if (p.images) {
+            try {
+                imgArray = typeof p.images === 'string' ? JSON.parse(p.images) : p.images;
+            } catch(e) {
+                imgArray = [p.images];
+            }
+        }
+        return {
+            id: p.id,
+            brand: p.brand || '',
+            name: p.name || '',
+            category: p.category || '',
+            stockStatus: p.stockStatus || 'in',
+            price: p.price || '0',
+            images: imgArray,
+            sizes: p.sizes ? p.sizes.split(',').map(s => s.trim()) : [],
+            colors: p.colors ? p.colors.split(',').map(c => c.trim()) : [],
+            sizeChartImg: p.sizeChartImg || '',
+            desc: p.desc || '',
+            reviewsText: p.reviewsText || ''
+        };
+    });
+
+    renderProducts(getAiSortedProducts(globalCachedProducts));
+}
+
 function getProducts() { 
-    return JSON.parse(localStorage.getItem('nexwear_products')) || []; 
+    return globalCachedProducts; 
 }
 
 function showHomepage() { 
@@ -147,7 +193,7 @@ function openProduct(id) {
     }
 
     const cc = document.getElementById('detail-colors-list'); cc.innerHTML = '';
-    if(p.colors) {
+    if(p.colors && p.colors.length > 0) {
         p.colors.forEach((color, idx) => {
             const btn = document.createElement('button'); btn.innerText = color;
             btn.className = "border px-2.5 py-1 text-[10px] font-bold uppercase rounded bg-white text-black dark:bg-[#1a1a1a] dark:text-white dark:border-gray-800 transition " + (idx === 0 ? "border-black dark:border-white ring-1 ring-black dark:ring-white" : "");
@@ -161,7 +207,7 @@ function openProduct(id) {
     }
 
     const sc = document.getElementById('detail-sizes-list'); sc.innerHTML = '';
-    if(p.sizes) {
+    if(p.sizes && p.sizes.length > 0) {
         p.sizes.forEach(size => {
             const btn = document.createElement('button'); btn.innerText = size;
             btn.className = "w-8 h-8 border rounded-md flex items-center justify-center text-[10px] font-black bg-white text-black dark:bg-[#1a1a1a] dark:text-white dark:border-gray-800 transition";
