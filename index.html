@@ -7,6 +7,9 @@
     <title>Velvora | Premium Luxury Fashion Store</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+   <!-- Firebase core App and Auth SDKs (Compat Version) -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <style>
         .animate-marquee { animation: marquee 30s linear infinite; }
         @keyframes marquee { 0% { transform: translateX(0%); } 100% { transform: translateX(-50%); } }
@@ -196,6 +199,9 @@
     </div>
 
     <div id="checkout-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4"></div>
+
+    <!-- Invisible Recaptcha Area for Firebase Authentication -->
+    <div id="recaptcha-container"></div>
 
     <script src="script.js"></script>
 </body>
