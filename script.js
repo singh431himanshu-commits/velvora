@@ -580,3 +580,4 @@ function updateCart() {
     const count = cart.length;
     if(document.getElementById('cart-count')) document.getElementById('cart-count').innerText = count;
 }
+ 
