@@ -1,3 +1,19 @@
+// 1. Firebase Initialization (मैक्सी भाई की असली डिटेल्स)
+const firebaseConfig = {
+  apiKey: "AIzaSyCUVM7Qt11vselCetcnc3wk3Y73RQ0emlI",
+  authDomain: "velvora-5737c.firebaseapp.com",
+  projectId: "velvora-5737c",
+  storageBucket: "velvora-5737c.firebasestorage.app",
+  messagingSenderId: "945792570282",
+  appId: "1:945792570282:web:5217a50aa347ca1bd311d3",
+  measurementId: "G-P0F5B0EFT1"
+};
+
+// Firebase को सुरक्षित रूप से चालू करें
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+
 const SUPABASE_URL = "https://tkllbmlcsrcxdwpbbleb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_CHZd1TBq8DzM-ZUfgQJpOA_Ukjmiv6V";
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -16,6 +32,13 @@ window.addEventListener('DOMContentLoaded', async () => {
     initSearchEngine();
     updateUserNavUi();
     await fetchLiveProducts(); // Supabase से डेटा लोड करें
+    
+    // Recaptcha Verifier को बैकग्राउंड में तैयार करें
+    if (document.getElementById('recaptcha-container')) {
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+            'size': 'invisible'
+        });
+    }
 });
 
 // Supabase से लाइव प्रोडक्ट्स डाउनलोड करने का फ़ंक्शन
@@ -30,7 +53,6 @@ async function fetchLiveProducts() {
         return;
     }
 
-    // डेटा को पुराने लोकल स्टोरेज फॉर्मेट में ढाला गया ताकि आपका पुराना कोड क्रैश न हो
     globalCachedProducts = products.map(p => {
         let imgArray = [];
         if (p.images) {
@@ -286,7 +308,7 @@ function updateUserNavUi() {
     const authBtn = document.getElementById('user-auth-nav-btn');
     if (!authBtn) return;
     if (currentUser) {
-        authBtn.innerHTML = `<i class="fa-solid fa-circle-user text-sm animate-pulse"></i> <span>${currentUser.split('@')[0]}</span>`;
+        authBtn.innerHTML = `<i class="fa-solid fa-circle-user text-sm animate-pulse"></i> <span>${currentUser.substring(0, 10)}...</span>`;
         authBtn.onclick = () => showProfileDashboard();
     } else {
         authBtn.innerHTML = `<i class="fa-solid fa-lock text-xs"></i> <span>Login</span>`;
@@ -294,6 +316,7 @@ function updateUserNavUi() {
     }
 }
 
+// 2. नया ओटीपी आधारित लॉगिन फॉर्म (Design)
 function openAuthModal() {
     const modal = document.getElementById('checkout-modal');
     modal.classList.remove('hidden');
@@ -301,25 +324,85 @@ function openAuthModal() {
         <div class="bg-white max-w-sm w-full p-6 rounded-2xl relative dark:bg-[#121212] text-xs font-bold space-y-4 shadow-xl animate-3d-wave">
             <button onclick="closeCheckoutModal()" class="absolute top-4 right-4 text-sm">✕</button>
             <h3 class="text-sm font-black uppercase border-b pb-2 tracking-wider text-black dark:text-white">👤 CUSTOMER AUTH GATEWAY</h3>
-            <div>
-                <label class="block mb-1 text-gray-400 uppercase text-[9px]">Enter Phone Number or Email</label>
-                <input type="text" id="auth-credential-input" placeholder="e.g., maxi@gmail.com or 9876543210" class="w-full p-2.5 border rounded dark:bg-gray-800 dark:border-gray-700 focus:outline-none">
+            
+            <!-- स्टेप 1: मोबाइल नंबर डालना -->
+            <div id="phone-input-section" class="space-y-4">
+                <div>
+                    <label class="block mb-1 text-gray-400 uppercase text-[9px]">Enter Phone Number (10 Digits)</label>
+                    <div class="flex gap-2">
+                        <span class="p-2.5 bg-gray-100 dark:bg-gray-800 rounded border dark:border-gray-700 flex items-center">+91</span>
+                        <input type="tel" id="auth-phone-input" placeholder="e.g., 9876543210" class="w-full p-2.5 border rounded dark:bg-gray-800 dark:border-gray-700 focus:outline-none">
+                    </div>
+                </div>
+                <button onclick="handlePhoneAuthSubmit()" id="send-otp-btn" class="w-full bg-black text-white py-2.5 uppercase rounded text-[10px] tracking-widest font-black dark:bg-white dark:text-black live-waving-btn">Send OTP 🚀</button>
             </div>
-            <button onclick="executeProfileLogin()" class="w-full bg-black text-white py-2.5 uppercase rounded text-[10px] tracking-widest font-black dark:bg-white dark:text-black live-waving-btn">Secure Login / Signup 🚀</button>
+
+            <!-- स्टेप 2: OTP भरना (शुरू में छुपा रहेगा) -->
+            <div id="otp-input-section" class="space-y-4 hidden">
+                <div>
+                    <label class="block mb-1 text-gray-400 uppercase text-[9px]">Enter OTP Code</label>
+                    <input type="text" id="auth-otp-input" placeholder="6-Digit OTP" class="w-full p-2.5 border rounded dark:bg-gray-800 dark:border-gray-700 focus:outline-none text-center tracking-widest text-lg">
+                </div>
+                <button onclick="handleOtpVerificationSubmit()" class="w-full bg-emerald-600 text-white py-2.5 uppercase rounded text-[10px] tracking-widest font-black">Verify OTP & Login 🏆</button>
+            </div>
         </div>
     `;
 }
 
-function executeProfileLogin() {
-    const credential = document.getElementById('auth-credential-input').value.trim();
-    if (!credential) return alert("Please type your Phone number or Email to proceed!");
-    currentUser = credential;
-    localStorage.setItem('velvora_current_user', JSON.stringify(currentUser));
-    let orderLog = JSON.parse(localStorage.getItem(`orders_${currentUser}`)) || [];
-    localStorage.setItem(`orders_${currentUser}`, JSON.stringify(orderLog));
-    closeCheckoutModal();
-    updateUserNavUi();
-    alert(`🎉 Account Auth Success!`);
+// 3. OTP भेजने का फंक्शन
+function handlePhoneAuthSubmit() {
+    const phone = document.getElementById('auth-phone-input').value.trim();
+    if (phone.length !== 10 || isNaN(phone)) {
+        return alert("🚨 कृपया एक मान्य 10 अंकों का मोबाइल नंबर डालें!");
+    }
+
+    const fullPhoneNumber = "+91" + phone;
+    const appVerifier = window.recaptchaVerifier;
+
+    document.getElementById('send-otp-btn').innerText = "Sending OTP...";
+    document.getElementById('send-otp-btn').disabled = true;
+
+    firebase.auth().signInWithPhoneNumber(fullPhoneNumber, appVerifier)
+        .then((confirmationResult) => {
+            window.confirmationResult = confirmationResult;
+            alert("✅ OTP सफलतापूर्वक आपके मोबाइल पर भेज दिया गया है!");
+            
+            // फ़ोन इनपुट को छिपाकर OTP बॉक्स दिखाएं
+            document.getElementById('phone-input-section').classList.add('hidden');
+            document.getElementById('otp-input-section').classList.remove('hidden');
+        }).catch((error) => {
+            alert("❌ समस्या आई: " + error.message);
+            document.getElementById('send-otp-btn').innerText = "Send OTP 🚀";
+            document.getElementById('send-otp-btn').disabled = false;
+            // एरर आने पर recaptcha रीसेट करना आवश्यक है
+            window.recaptchaVerifier.render().then(function(widgetId) {
+                grecaptcha.reset(widgetId);
+            });
+        });
+}
+
+// 4. OTP वेरीफाई करने का फंक्शन
+function handleOtpVerificationSubmit() {
+    const code = document.getElementById('auth-otp-input').value.trim();
+    if (code.length !== 6 || isNaN(code)) {
+        return alert("🚨 कृपया सही 6-अंकीय OTP कोड भरें!");
+    }
+
+    window.confirmationResult.confirm(code)
+        .then((result) => {
+            // लॉगिन सफल! यूजर डेटा लोकल स्टोरेज में सेव करें
+            currentUser = result.user.phoneNumber;
+            localStorage.setItem('velvora_current_user', JSON.stringify(currentUser));
+            
+            let orderLog = JSON.parse(localStorage.getItem(`orders_${currentUser}`)) || [];
+            localStorage.setItem(`orders_${currentUser}`, JSON.stringify(orderLog));
+
+            closeCheckoutModal();
+            updateUserNavUi();
+            alert(`🎉 लॉगिन सफल! स्वागत है वेल्वोरा स्टोर पर!`);
+        }).catch((error) => {
+            alert("❌ गलत OTP! कृपया सही कोड दर्ज करें या पुनः प्रयास करें।");
+        });
 }
 
 function executeProfileLogout() {
