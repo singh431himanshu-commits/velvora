@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Velvora | Premium Admin Theme HQ</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans antialiased min-h-screen flex text-xs">
@@ -58,8 +59,8 @@
                                         <option value="Shirts">Shirts</option>
                                         <option value="Shoes">Shoes</option>
                                         <option value="Jeans">Jeans</option>
-                                        <option value="Jeans">Leather jacket</option>
-                                        <option value="Jeans">Bag</option>
+                                        <option value="Leather jacket">Leather jacket</option>
+                                        <option value="Bag">Bag</option>
                                         <option value="Electronics">Electronics</option>
                                     </select>
                                 </div>
@@ -131,7 +132,9 @@
                                     <th class="py-2 px-2">Valuation</th>
                                     <th class="py-2 text-right px-2">Actions Vector</th>
                                 </tr>
-                            </thead>
+                            </table>
+                            <div id="loading-log" class="text-center py-4 text-gray-400 hidden">Loading live vault systems...</div>
+                            <table class="w-full text-left text-xs">
                             <tbody id="catalog-table-body" class="divide-y font-medium text-gray-600"></tbody>
                         </table>
                     </section>
@@ -142,9 +145,11 @@
     </div>
 
     <script>
-        window.addEventListener('DOMContentLoaded', () => { renderCatalogTable(); });
+        const SUPABASE_URL = "https://tkllbmlcsrcxdwpbbleb.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_CHZd1TBq8DzM-ZUfgQJpOA_Ukjmiv6V";
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        function getProducts() { return JSON.parse(localStorage.getItem('nexwear_products')) || []; }
+        window.addEventListener('DOMContentLoaded', () => { renderCatalogTable(); });
 
         function convertFileToBase64(fileInput, textInputId) {
             const file = fileInput.files[0];
@@ -154,36 +159,58 @@
             reader.readAsDataURL(file);
         }
 
-        function renderCatalogTable() {
-            const products = getProducts();
+        async function renderCatalogTable() {
             const tbody = document.getElementById('catalog-table-body');
             tbody.innerHTML = '';
+            
+            const { data: products, error } = await _supabase.from('products').select('*');
+            if (error) {
+                console.error(error);
+                return;
+            }
+
             products.forEach(p => {
                 const stockLabel = p.stockStatus === "out" ? "<span class='bg-red-50 text-red-600 px-1.5 py-0.5 rounded text-[8px] font-bold'>OUT</span>" : "<span class='bg-green-50 text-green-600 px-1.5 py-0.5 rounded text-[8px] font-bold'>LIVE</span>";
                 const rawPrice = p.price ? p.price.toString().replace(/[^\d]/g, '') : '0';
+                
+                let img1 = '', img2 = '';
+                if (p.images) {
+                    try {
+                        const parsed = typeof p.images === 'string' ? JSON.parse(p.images) : p.images;
+                        img1 = parsed[0] || '';
+                        img2 = parsed[1] || '';
+                    } catch(e) {
+                        img1 = p.images;
+                    }
+                }
+
+                const escapedName = (p.name || '').replace(/'/g, "\\'");
+                const escapedDesc = (p.desc || '').replace(/'/g, "\\'");
+                const escapedReviews = (p.reviewsText || '').replace(/'/g, "\\'");
+
                 tbody.innerHTML += `
                     <tr class="hover:bg-gray-50">
                         <td class="py-2 px-2 font-bold text-gray-700 max-w-[180px] truncate"><b>[${p.brand}]</b> ${p.name}</td>
                         <td class="py-2 px-2">${stockLabel}</td>
                         <td class="py-2 px-2 font-black text-gray-900">₹${parseInt(rawPrice).toLocaleString('en-IN')}</td>
                         <td class="py-2 text-right px-2 space-x-2 font-bold text-[11px]">
-                            <button onclick="editProduct(${p.id})" class="text-blue-600 hover:underline">Edit</button>
-                            <button onclick="deleteProduct(${p.id})" class="text-red-500 hover:underline">Delete</button>
+                            <button onclick="editProduct('${p.id}', '${p.brand}', '${escapedName}', '${p.category}', '${p.stockStatus}', '${p.sizes || ''}', '${p.colors || ''}', '${rawPrice}', '${p.sizeChartImg || ''}', '${img1}', '${img2}', '${escapedDesc}', '${escapedReviews}')" class="text-blue-600 hover:underline">Edit</button>
+                            <button onclick="deleteProduct('${p.id}')" class="text-red-500 hover:underline">Delete</button>
                         </td>
                     </tr>
                 `;
             });
         }
 
-        function saveProduct(e) {
+        async function saveProduct(e) {
             e.preventDefault();
             const editId = document.getElementById('edit-id').value;
             const brand = document.getElementById('prod-brand').value;
             const name = document.getElementById('prod-name').value.trim();
             const cat = document.getElementById('prod-cat').value;
             const stockStatus = document.getElementById('prod-stock-status').value;
-            const sizes = document.getElementById('prod-sizes').value.split(',').map(s => s.trim());
-            const colors = document.getElementById('prod-colors').value.split(',').map(c => c.trim());
+            const sizes = document.getElementById('prod-sizes').value;
+            const colors = document.getElementById('prod-colors').value;
             const price = document.getElementById('prod-price').value.trim();
             const sizeChartImg = document.getElementById('prod-size-chart').value.trim();
             const img1 = document.getElementById('prod-img1').value.trim();
@@ -191,42 +218,55 @@
             const desc = document.getElementById('prod-desc').value.trim();
             const reviewsText = document.getElementById('prod-reviews').value.trim();
 
-            let products = getProducts();
-            const pData = { id: editId ? parseInt(editId) : Date.now(), brand, name, category: cat, stockStatus, price, images: [img1, img2], desc, sizes, colors, sizeChartImg, reviewsText };
+            const pData = { 
+                brand, 
+                name, 
+                category: cat, 
+                stockStatus, 
+                price, 
+                images: JSON.stringify([img1, img2]), 
+                desc, 
+                sizes, 
+                colors, 
+                sizeChartImg, 
+                reviewsText 
+            };
 
-            if(editId) { products = products.map(p => p.id == editId ? pData : p); } 
-            else { products.push(pData); }
+            if(editId) {
+                const { error } = await _supabase.from('products').update(pData).eq('id', parseInt(editId));
+                if (error) alert("Error updating: " + error.message);
+            } else {
+                const { error } = await _supabase.from('products').insert([pData]);
+                if (error) alert("Error inserting: " + error.message);
+            }
 
-            localStorage.setItem('nexwear_products', JSON.stringify(products));
             document.getElementById('product-form').reset();
             document.getElementById('edit-id').value = '';
             renderCatalogTable();
             alert('Database synchronized successfully!');
         }
 
-        function editProduct(id) {
-            const p = getProducts().find(prod => prod.id == id);
-            if(!p) return;
-            document.getElementById('edit-id').value = p.id;
-            document.getElementById('prod-brand').value = p.brand;
-            document.getElementById('prod-name').value = p.name;
-            document.getElementById('prod-cat').value = p.category;
-            document.getElementById('prod-stock-status').value = p.stockStatus || "in";
-            document.getElementById('prod-sizes').value = p.sizes.join(', ');
-            document.getElementById('prod-colors').value = p.colors.join(', ');
-            document.getElementById('prod-price').value = p.price.toString().replace(/[^\d]/g, '');
-            document.getElementById('prod-size-chart').value = p.sizeChartImg || '';
-            document.getElementById('prod-img1').value = p.images[0] || '';
-            document.getElementById('prod-img2').value = p.images[1] || '';
-            document.getElementById('prod-desc').value = p.desc;
-            document.getElementById('prod-reviews').value = p.reviewsText || '';
+        function editProduct(id, brand, name, cat, stockStatus, sizes, colors, price, sizeChartImg, img1, img2, desc, reviewsText) {
+            document.getElementById('edit-id').value = id;
+            document.getElementById('prod-brand').value = brand;
+            document.getElementById('prod-name').value = name;
+            document.getElementById('prod-cat').value = cat;
+            document.getElementById('prod-stock-status').value = stockStatus || "in";
+            document.getElementById('prod-sizes').value = sizes;
+            document.getElementById('prod-colors').value = colors;
+            document.getElementById('prod-price').value = price;
+            document.getElementById('prod-size-chart').value = sizeChartImg;
+            document.getElementById('prod-img1').value = img1;
+            document.getElementById('prod-img2').value = img2;
+            document.getElementById('prod-desc').value = desc;
+            document.getElementById('prod-reviews').value = reviewsText;
         }
 
-        function deleteProduct(id) {
-            if(!confirm('Delete item?')) return;
-            let products = getProducts().filter(p => p.id != id);
-            localStorage.setItem('nexwear_products', JSON.stringify(products));
-            renderCatalogTable();
+        async function deleteProduct(id) {
+            if(!confirm('Delete item from cloud master storage?')) return;
+            const { error } = await _supabase.from('products').delete().eq('id', parseInt(id));
+            if (error) alert("Error deleting: " + error.message);
+            else renderCatalogTable();
         }
     </script>
 </body>
