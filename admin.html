@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Velvora | Premium Admin Theme HQ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans antialiased min-h-screen flex text-xs">
+
+    <aside class="w-56 bg-[#2f4050] text-[#a7b1c2] flex flex-col flex-shrink-0 hidden md:flex">
+        <div class="p-4 bg-[#233141] text-center border-b border-[#243547]">
+            <h4 class="text-white font-bold tracking-wide">Maxi HQ Control Panel</h4>
+            <p class="text-[9px] text-gray-400">Master Art Director Engine</p>
+        </div>
+        <nav class="flex-1 px-2 py-3 space-y-1 font-semibold">
+            <a href="#" class="flex items-center gap-2 px-3 py-2 bg-[#293846] text-white rounded"><i class="fa-solid fa-th-large text-emerald-400"></i> Operation Dashboard</a>
+            <a href="velvora.html" class="flex items-center gap-2 px-3 py-2 hover:bg-[#293846] hover:text-white transition"><i class="fa-solid fa-shop"></i> View Live Store Index</a>
+        </nav>
+    </aside>
+
+    <div class="flex-1 flex flex-col overflow-x-hidden">
+        <header class="bg-white border-b px-5 py-3 flex justify-between items-center shadow-2xs">
+            <h2 class="font-black uppercase tracking-wider text-gray-400">Velvora Master Vault Data Systems</h2>
+            <a href="velvora.html" class="font-bold text-gray-500 hover:text-black">Exit Terminal</a>
+        </header>
+
+        <main class="p-4 space-y-4 max-w-7xl w-full mx-auto">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                
+                <div class="space-y-4">
+                    <section class="bg-white p-4 rounded border">
+                        <h3 class="font-bold uppercase text-gray-400 border-b pb-1.5 mb-3"><i class="fa-solid fa-plus-circle text-emerald-500 mr-1"></i> Add / Configure Premium Model Drop</h3>
+                        <form id="product-form" onsubmit="saveProduct(event)" class="space-y-3 font-semibold">
+                            <input type="hidden" id="edit-id">
+                            
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[9px] uppercase text-gray-400 mb-0.5">Select Brand Channel</label>
+                                    <select id="prod-brand" class="w-full p-2 border rounded bg-white font-black text-black">
+                                        <option value="Zara">Zara Capsule</option>
+                                        <option value="H&M">H&M Basics</option>
+                                        <option value="Nike">Nike Kinetics</option>
+                                        <option value="Velvora">Velvora Originals</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[9px] uppercase text-gray-400 mb-0.5">Product Variant Title</label>
+                                    <input type="text" id="prod-name" required class="w-full p-2 border rounded">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[9px] uppercase text-gray-400 mb-0.5">Category Node</label>
+                                    <select id="prod-cat" class="w-full p-2 border rounded bg-white">
+                                        <option value="Shirts">Shirts</option>
+                                        <option value="Shoes">Shoes</option>
+                                        <option value="Jeans">Jeans</option>
+                                        <option value="Jeans">Leather jacket</option>
+                                        <option value="Jeans">Bag</option>
+                                        <option value="Electronics">Electronics</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[9px] uppercase text-gray-400 mb-0.5">Allocation Status</label>
+                                    <select id="prod-stock-status" class="w-full p-2 border rounded bg-white text-green-600">
+                                        <option value="in">Allocated (Active Live)</option>
+                                        <option value="out">Out of Allocation</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[9px] uppercase text-gray-400 mb-0.5">Sizes Array Matrix</label>
+                                    <input type="text" id="prod-sizes" required class="w-full p-2 border rounded" placeholder="M, L, XL">
+                                </div>
+                                <div>
+                                    <label class="block text-[9px] uppercase text-gray-400 mb-0.5">Colors Vector List</label>
+                                    <input type="text" id="prod-colors" required class="w-full p-2 border rounded" placeholder="Black, White">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[9px] uppercase text-gray-400 mb-0.5">Base Price (INR)</label>
+                                    <input type="number" id="prod-price" required class="w-full p-2 border rounded">
+                                </div>
+                                <div>
+                                    <label class="block text-[9px] uppercase text-gray-400 mb-0.5">Size Chart Image Link</label>
+                                    <input type="text" id="prod-size-chart" class="w-full p-2 border rounded" placeholder="https://url.jpg">
+                                </div>
+                            </div>
+
+                            <div class="space-y-1.5 border-t pt-2">
+                                <h4 class="text-[9px] uppercase text-emerald-500 font-bold">Primary Micro Asset Vector File/URL</h4>
+                                <input type="file" accept="image/*" onchange="convertFileToBase64(this, 'prod-img1')" class="w-full text-[10px] text-gray-400">
+                                <input type="text" id="prod-img1" placeholder="Or absolute asset url..." class="w-full p-1.5 border rounded">
+                            </div>
+
+                            <div class="space-y-1.5 border-t pt-2">
+                                <h4 class="text-[9px] uppercase text-emerald-500 font-bold">Secondary Asset Image Vector File/URL</h4>
+                                <input type="file" accept="image/*" onchange="convertFileToBase64(this, 'prod-img2')" class="w-full text-[10px] text-gray-400">
+                                <input type="text" id="prod-img2" placeholder="Or secondary asset url..." class="w-full p-1.5 border rounded">
+                            </div>
+
+                            <div>
+                                <label class="block text-[9px] uppercase text-gray-400 mb-0.5">Overview Narrative Content Description</label>
+                                <textarea id="prod-desc" required rows="2" class="w-full p-2 border rounded"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-[9px] uppercase text-gray-400 mb-0.5">Reviews Matrix Box Block logs</label>
+                                <textarea id="prod-reviews" rows="1" class="w-full p-2 border rounded" placeholder="⭐ Verified Review Feedback..."></textarea>
+                            </div>
+
+                            <button type="submit" class="w-full bg-emerald-500 text-white font-bold uppercase py-2 rounded hover:bg-emerald-600 transition">Synchronize Asset to Storage 🚀</button>
+                        </form>
+                    </section>
+                </div>
+
+                <div class="lg:col-span-2">
+                    <section class="bg-white p-4 rounded border overflow-x-auto">
+                        <h3 class="font-bold uppercase text-gray-400 mb-3 border-b pb-1.5"><i class="fa-solid fa-list-check text-emerald-500 mr-1"></i> Active Catalog Systems Configuration Log</h3>
+                        <table class="w-full text-left text-xs">
+                            <thead>
+                                <tr class="border-b text-[9px] font-bold text-gray-400 uppercase bg-gray-50">
+                                    <th class="py-2 px-2">Brand Channel & Variant Title</th>
+                                    <th class="py-2 px-2">Allocation</th>
+                                    <th class="py-2 px-2">Valuation</th>
+                                    <th class="py-2 text-right px-2">Actions Vector</th>
+                                </tr>
+                            </thead>
+                            <tbody id="catalog-table-body" class="divide-y font-medium text-gray-600"></tbody>
+                        </table>
+                    </section>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => { renderCatalogTable(); });
+
+        function getProducts() { return JSON.parse(localStorage.getItem('nexwear_products')) || []; }
+
+        function convertFileToBase64(fileInput, textInputId) {
+            const file = fileInput.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onloadend = function() { document.getElementById(textInputId).value = reader.result; }
+            reader.readAsDataURL(file);
+        }
+
+        function renderCatalogTable() {
+            const products = getProducts();
+            const tbody = document.getElementById('catalog-table-body');
+            tbody.innerHTML = '';
+            products.forEach(p => {
+                const stockLabel = p.stockStatus === "out" ? "<span class='bg-red-50 text-red-600 px-1.5 py-0.5 rounded text-[8px] font-bold'>OUT</span>" : "<span class='bg-green-50 text-green-600 px-1.5 py-0.5 rounded text-[8px] font-bold'>LIVE</span>";
+                const rawPrice = p.price ? p.price.toString().replace(/[^\d]/g, '') : '0';
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="py-2 px-2 font-bold text-gray-700 max-w-[180px] truncate"><b>[${p.brand}]</b> ${p.name}</td>
+                        <td class="py-2 px-2">${stockLabel}</td>
+                        <td class="py-2 px-2 font-black text-gray-900">₹${parseInt(rawPrice).toLocaleString('en-IN')}</td>
+                        <td class="py-2 text-right px-2 space-x-2 font-bold text-[11px]">
+                            <button onclick="editProduct(${p.id})" class="text-blue-600 hover:underline">Edit</button>
+                            <button onclick="deleteProduct(${p.id})" class="text-red-500 hover:underline">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function saveProduct(e) {
+            e.preventDefault();
+            const editId = document.getElementById('edit-id').value;
+            const brand = document.getElementById('prod-brand').value;
+            const name = document.getElementById('prod-name').value.trim();
+            const cat = document.getElementById('prod-cat').value;
+            const stockStatus = document.getElementById('prod-stock-status').value;
+            const sizes = document.getElementById('prod-sizes').value.split(',').map(s => s.trim());
+            const colors = document.getElementById('prod-colors').value.split(',').map(c => c.trim());
+            const price = document.getElementById('prod-price').value.trim();
+            const sizeChartImg = document.getElementById('prod-size-chart').value.trim();
+            const img1 = document.getElementById('prod-img1').value.trim();
+            const img2 = document.getElementById('prod-img2').value.trim();
+            const desc = document.getElementById('prod-desc').value.trim();
+            const reviewsText = document.getElementById('prod-reviews').value.trim();
+
+            let products = getProducts();
+            const pData = { id: editId ? parseInt(editId) : Date.now(), brand, name, category: cat, stockStatus, price, images: [img1, img2], desc, sizes, colors, sizeChartImg, reviewsText };
+
+            if(editId) { products = products.map(p => p.id == editId ? pData : p); } 
+            else { products.push(pData); }
+
+            localStorage.setItem('nexwear_products', JSON.stringify(products));
+            document.getElementById('product-form').reset();
+            document.getElementById('edit-id').value = '';
+            renderCatalogTable();
+            alert('Database synchronized successfully!');
+        }
+
+        function editProduct(id) {
+            const p = getProducts().find(prod => prod.id == id);
+            if(!p) return;
+            document.getElementById('edit-id').value = p.id;
+            document.getElementById('prod-brand').value = p.brand;
+            document.getElementById('prod-name').value = p.name;
+            document.getElementById('prod-cat').value = p.category;
+            document.getElementById('prod-stock-status').value = p.stockStatus || "in";
+            document.getElementById('prod-sizes').value = p.sizes.join(', ');
+            document.getElementById('prod-colors').value = p.colors.join(', ');
+            document.getElementById('prod-price').value = p.price.toString().replace(/[^\d]/g, '');
+            document.getElementById('prod-size-chart').value = p.sizeChartImg || '';
+            document.getElementById('prod-img1').value = p.images[0] || '';
+            document.getElementById('prod-img2').value = p.images[1] || '';
+            document.getElementById('prod-desc').value = p.desc;
+            document.getElementById('prod-reviews').value = p.reviewsText || '';
+        }
+
+        function deleteProduct(id) {
+            if(!confirm('Delete item?')) return;
+            let products = getProducts().filter(p => p.id != id);
+            localStorage.setItem('nexwear_products', JSON.stringify(products));
+            renderCatalogTable();
+        }
+    </script>
+</body>
+</html>
