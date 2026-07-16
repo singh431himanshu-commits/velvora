@@ -30,6 +30,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     switchTab('desc'); 
     initSearchEngine(); 
     setupAuthObserver(); 
+    startBannerSlider(); // ⚡ बैनर स्लाइडर एक्टिवेट किया
     await fetchLiveProducts(); 
     
     if (!history.state || history.state.page !== 'home') {
@@ -41,6 +42,17 @@ window.addEventListener('popstate', (event) => {
     showHomepage();
     history.pushState({ page: 'home' }, '', window.location.pathname);
 });
+
+// ⚡ ऑटो-स्लाइडिंग लक्ज़री बैनर स्लाइडर लॉजिक (5 सेकंड टाइमर)
+let currentSlideIndex = 0;
+function startBannerSlider() {
+    const container = document.getElementById('slider-container');
+    if (!container) return;
+    setInterval(() => {
+        currentSlideIndex = (currentSlideIndex + 1) % 4;
+        container.style.transform = `translateX(-${currentSlideIndex * 100}%)`;
+    }, 5000);
+}
 
 // Supabase से लाइव प्रोडक्ट्स डाउनलोड करने और शफल करने का फ़ंक्शन
 async function fetchLiveProducts() { 
@@ -318,7 +330,7 @@ function closeSizeChartModal() {
     document.getElementById('size-chart-modal').classList.add('hidden'); 
 } 
 
-// ⚡ अपडेटेड ऑटो-ऑब्जर्वर: लॉगिन होने पर सीधे स्क्रीन पर नहीं खुलेगा, सिर्फ नवबार अपडेट करेगा
+// ⚡ सुरक्षा ऑब्जर्वर: ईमेल वेरिफिकेशन स्टेटस चेक + एडमिन अकाउंट सिंगल-लॉगिन प्रोटेक्शन
 function setupAuthObserver() {
     firebase.auth().onAuthStateChanged(async (user) => {
         const accountSec = document.getElementById('account-section');
@@ -327,7 +339,27 @@ function setupAuthObserver() {
         const usernameDisp = document.getElementById('user-username-display');
         const usernameBox = document.getElementById('username-setup-box');
         
+        // 🚨 एडमिन सिंगल ईमेल ब्लॉक प्रोटेक्शन
+        const ADMIN_EMAIL = "singh431himanshu@gmail.com"; 
+
         if (user) {
+            // चेक करें कि एडमिन ईमेल स्टोर फ्रंट पर लॉगिन न हो सके
+            if (user.email === ADMIN_EMAIL) {
+                alert("🔒 SECURITY PROTOCOL: यह एडमिन अकाउंट है। कृपया कस्टमर स्टोर पर दूसरा अकाउंट यूज़ करें!");
+                firebase.auth().signOut();
+                window.location.reload();
+                return;
+            }
+
+            // ✉️ ईमेल वेरिफिकेशन वेरिफिकेशन सुरक्षा
+            if (!user.emailVerified) {
+                alert("✉️ EMAIL VERIFICATION: कृपया लॉगिन करने से पहले अपने जीमेल इनबॉक्स में जाकर वेरिफिकेशन लिंक पर क्लिक करें!");
+                user.sendEmailVerification().catch(err => console.log("Verification email rate-limit"));
+                firebase.auth().signOut();
+                window.location.reload();
+                return;
+            }
+
             currentUser = user.email;
             if(emailDisp) emailDisp.innerText = `Logged in: ${user.email}`;
             if(navAuthBtn) {
@@ -431,7 +463,11 @@ function handleEmailAuth(type) {
 
     if (type === 'signup') { 
         firebase.auth().createUserWithEmailAndPassword(email, password) 
-            .then((result) => { closeCheckoutModal(); }) 
+            .then((result) => { 
+                result.user.sendEmailVerification();
+                alert("✉️ वेरिफिकेशन लिंक आपकी ईमेल पर भेज दिया गया है, कृपया वेरिफाई करें!");
+                closeCheckoutModal(); 
+            }) 
             .catch((error) => { alert("❌ साइन-अप में समस्या: " + error.message); }); 
     } else { 
         firebase.auth().signInWithEmailAndPassword(email, password) 
