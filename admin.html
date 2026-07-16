@@ -55,7 +55,7 @@
                             <div class="grid grid-cols-2 gap-2">
                                 <div>
                                     <label class="block text-[9px] uppercase text-gray-400 mb-0.5">Category Node</label>
-                                    <select id="prod-cat" class="w-full p-2 border rounded bg-white">
+                                    <select id="prod-cat" class="w-full p-2 border rounded bg-white font-black text-black">
                                         <option value="Shirts">Shirts</option>
                                         <option value="Shoes">Shoes</option>
                                         <option value="Jeans">Jeans</option>
@@ -66,7 +66,7 @@
                                 </div>
                                 <div>
                                     <label class="block text-[9px] uppercase text-gray-400 mb-0.5">Allocation Status</label>
-                                    <select id="prod-stock-status" class="w-full p-2 border rounded bg-white text-green-600">
+                                    <select id="prod-stock-status" onchange="this.className = this.value === 'out' ? 'w-full p-2 border rounded bg-white font-black text-red-600' : 'w-full p-2 border rounded bg-white font-black text-green-600'" class="w-full p-2 border rounded bg-white font-black text-green-600">
                                         <option value="in">Allocated (Active Live)</option>
                                         <option value="out">Out of Allocation</option>
                                     </select>
@@ -97,13 +97,13 @@
 
                             <div class="space-y-1.5 border-t pt-2">
                                 <h4 class="text-[9px] uppercase text-emerald-500 font-bold">Primary Micro Asset Vector File/URL</h4>
-                                <input type="file" accept="image/*" onchange="convertFileToBase64(this, 'prod-img1')" class="w-full text-[10px] text-gray-400">
+                                <input type="file" accept="image/*" onchange="convertFileToBase64(fileInput, 'prod-img1')" class="w-full text-[10px] text-gray-400">
                                 <input type="text" id="prod-img1" placeholder="Or absolute asset url..." class="w-full p-1.5 border rounded">
                             </div>
 
                             <div class="space-y-1.5 border-t pt-2">
                                 <h4 class="text-[9px] uppercase text-emerald-500 font-bold">Secondary Asset Image Vector File/URL</h4>
-                                <input type="file" accept="image/*" onchange="convertFileToBase64(this, 'prod-img2')" class="w-full text-[10px] text-gray-400">
+                                <input type="file" accept="image/*" onchange="convertFileToBase64(fileInput, 'prod-img2')" class="w-full text-[10px] text-gray-400">
                                 <input type="text" id="prod-img2" placeholder="Or secondary asset url..." class="w-full p-1.5 border rounded">
                             </div>
 
@@ -116,7 +116,7 @@
                                 <textarea id="prod-reviews" rows="1" class="w-full p-2 border rounded" placeholder="⭐ Verified Review Feedback..."></textarea>
                             </div>
 
-                            <button type="submit" class="w-full bg-emerald-500 text-white font-bold uppercase py-2 rounded hover:bg-emerald-600 transition">Synchronize Asset to Storage 🚀</button>
+                            <button type="submit" id="submit-btn" class="w-full bg-emerald-500 text-white font-bold uppercase py-2 rounded hover:bg-emerald-600 transition">Synchronize Asset to Storage 🚀</button>
                         </form>
                     </section>
                 </div>
@@ -132,9 +132,10 @@
                                     <th class="py-2 px-2">Valuation</th>
                                     <th class="py-2 text-right px-2">Actions Vector</th>
                                 </tr>
-                            </table>
-                            <div id="loading-log" class="text-center py-4 text-gray-400 hidden">Loading live vault systems...</div>
-                            <table class="w-full text-left text-xs">
+                            </thead>
+                        </table>
+                        <div id="loading-log" class="text-center py-4 text-gray-400 hidden">Loading live vault systems...</div>
+                        <table class="w-full text-left text-xs">
                             <tbody id="catalog-table-body" class="divide-y font-medium text-gray-600"></tbody>
                         </table>
                     </section>
@@ -184,9 +185,11 @@
                     }
                 }
 
-                const escapedName = (p.name || '').replace(/'/g, "\\'");
-                const escapedDesc = (p.desc || '').replace(/'/g, "\\'");
-                const escapedReviews = (p.reviewsText || '').replace(/'/g, "\\'");
+                const escapedName = (p.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                const escapedDesc = (p.desc || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                const escapedReviews = (p.reviewsText || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                const escapedBrand = (p.brand || '').replace(/'/g, "\\'");
+                const escapedCat = (p.category || '').replace(/'/g, "\\'");
 
                 tbody.innerHTML += `
                     <tr class="hover:bg-gray-50">
@@ -194,7 +197,7 @@
                         <td class="py-2 px-2">${stockLabel}</td>
                         <td class="py-2 px-2 font-black text-gray-900">₹${parseInt(rawPrice).toLocaleString('en-IN')}</td>
                         <td class="py-2 text-right px-2 space-x-2 font-bold text-[11px]">
-                            <button onclick="editProduct('${p.id}', '${p.brand}', '${escapedName}', '${p.category}', '${p.stockStatus}', '${p.sizes || ''}', '${p.colors || ''}', '${rawPrice}', '${p.sizeChartImg || ''}', '${img1}', '${img2}', '${escapedDesc}', '${escapedReviews}')" class="text-blue-600 hover:underline">Edit</button>
+                            <button onclick="editProduct('${p.id}', '${escapedBrand}', '${escapedName}', '${escapedCat}', '${p.stockStatus || 'in'}', '${p.sizes || ''}', '${p.colors || ''}', '${rawPrice}', '${p.sizeChartImg || ''}', '${img1}', '${img2}', '${escapedDesc}', '${escapedReviews}')" class="text-blue-600 hover:underline">Edit</button>
                             <button onclick="deleteProduct('${p.id}')" class="text-red-500 hover:underline">Delete</button>
                         </td>
                     </tr>
@@ -242,16 +245,35 @@
 
             document.getElementById('product-form').reset();
             document.getElementById('edit-id').value = '';
+            document.getElementById('prod-stock-status').className = 'w-full p-2 border rounded bg-white font-black text-green-600';
+            document.getElementById('submit-btn').innerText = 'Synchronize Asset to Storage 🚀';
             renderCatalogTable();
             alert('Database synchronized successfully!');
         }
 
         function editProduct(id, brand, name, cat, stockStatus, sizes, colors, price, sizeChartImg, img1, img2, desc, reviewsText) {
             document.getElementById('edit-id').value = id;
-            document.getElementById('prod-brand').value = brand;
+            
+            // मैच सुनिश्चित करने के लिए केस-सेंसिटिव चेक के साथ वैल्यू असाइन करें
+            const brandSelect = document.getElementById('prod-brand');
+            brandSelect.value = brand;
+            if(!brandSelect.value && brand) {
+                // अगर डायरेक्ट मैच नहीं हुआ तो पहला अक्षर कैपिटल करके देखें
+                brandSelect.value = brand.charAt(0).toUpperCase() + brand.slice(1);
+            }
+
+            const catSelect = document.getElementById('prod-cat');
+            catSelect.value = cat;
+            if(!catSelect.value && cat) {
+                catSelect.value = cat.charAt(0).toUpperCase() + cat.slice(1);
+            }
+
             document.getElementById('prod-name').value = name;
-            document.getElementById('prod-cat').value = cat;
-            document.getElementById('prod-stock-status').value = stockStatus || "in";
+            
+            const stockSelect = document.getElementById('prod-stock-status');
+            stockSelect.value = stockStatus || "in";
+            stockSelect.className = stockSelect.value === 'out' ? 'w-full p-2 border rounded bg-white font-black text-red-600' : 'w-full p-2 border rounded bg-white font-black text-green-600';
+
             document.getElementById('prod-sizes').value = sizes;
             document.getElementById('prod-colors').value = colors;
             document.getElementById('prod-price').value = price;
@@ -260,6 +282,12 @@
             document.getElementById('prod-img2').value = img2;
             document.getElementById('prod-desc').value = desc;
             document.getElementById('prod-reviews').value = reviewsText;
+            
+            // बटन टेक्स्ट बदलें ताकि पता चले कि एडिट मोड चालू है
+            document.getElementById('submit-btn').innerText = 'Update Catalog Item 🔄';
+            
+            // यूजर को दिखाने के लिए फॉर्म पर स्क्रॉल करें
+            document.getElementById('product-form').scrollIntoView({ behavior: 'smooth' });
         }
 
         async function deleteProduct(id) {
