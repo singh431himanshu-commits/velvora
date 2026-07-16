@@ -1,156 +1,158 @@
 // 1. Firebase Initialization (मैक्सी भाई की असली डिटेल्स)
-const firebaseConfig = { //
-  apiKey: "AIzaSyCUVM7Qt11vselCetcnc3wk3Y73RQOemlI", //
-  authDomain: "velvora-5737c.firebaseapp.com", //
-  projectId: "velvora-5737c", //
-  storageBucket: "velvora-5737c.firebasestorage.app", //
-  messagingSenderId: "945792570282", //
-  appId: "1:945792570282:web:5217a50aa347ca1bd311d319e", //
-  measurementId: "G-P0F5B0EFT1" //
-}; //
+const firebaseConfig = { 
+  apiKey: "AIzaSyCUVM7Qt11vselCetcnc3wk3Y73RQOemlI", 
+  authDomain: "velvora-5737c.firebaseapp.com", 
+  projectId: "velvora-5737c", 
+  storageBucket: "velvora-5737c.firebasestorage.app", 
+  messagingSenderId: "945792570282", 
+  appId: "1:945792570282:web:5217a50aa347ca1bd311d319e", 
+  measurementId: "G-P0F5B0EFT1" 
+}; 
 
 // Firebase को सुरक्षित रूप से चालू करें
-if (!firebase.apps.length) { //
-  firebase.initializeApp(firebaseConfig); //
-} //
+if (!firebase.apps.length) { 
+  firebase.initializeApp(firebaseConfig); 
+} 
 
-const SUPABASE_URL = "https://tkllbmlcsrcxdwpbbleb.supabase.co"; //
-const SUPABASE_KEY = "sb_publishable_CHZd1TBq8DzM-ZUfgQJpOA_Ukjmiv6V"; //
-const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); //
+const SUPABASE_URL = "https://tkllbmlcsrcxdwpbbleb.supabase.co"; 
+const SUPABASE_KEY = "sb_publishable_CHZd1TBq8DzM-ZUfgQJpOA_Ukjmiv6V"; 
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); 
 
-let cart = []; //
-let wishlist = JSON.parse(localStorage.getItem('velvora_wishlist')) || []; //
-let selectedSize = null; //
-let selectedColor = null; //
-let currentProductPhotos = []; //
+let cart = []; 
+let wishlist = JSON.parse(localStorage.getItem('velvora_wishlist')) || []; 
+let selectedSize = null; 
+let selectedColor = null; 
+let currentProductPhotos = []; 
 let globalCachedProducts = []; // क्लाउड डेटा रखने के लिए ग्लोबल वेरिएबल
 
-let currentUser = JSON.parse(localStorage.getItem('velvora_current_user')) || null; //
+let currentUser = JSON.parse(localStorage.getItem('velvora_current_user')) || null; 
 
-// DOMContentLoaded इवेंट - बैक बटन हैंडलर के साथ अपडेटेड
-window.addEventListener('DOMContentLoaded', async () => { //
-    switchTab('desc'); //
-    initSearchEngine(); //
-    updateUserNavUi(); //
+// DOMContentLoaded इवेंट - बैक बटन 404 फिक्स के साथ अपडेटेड
+window.addEventListener('DOMContentLoaded', async () => { 
+    switchTab('desc'); 
+    initSearchEngine(); 
+    updateUserNavUi(); 
     await fetchLiveProducts(); // Supabase से डेटा लोड करें
     
-    // ब्राउज़र के इतिहास में होमपेज की स्टेट लॉक करें ताकि बैक करने पर 404 न आए
-    history.pushState({ page: 'home' }, '');
-}); //
+    // वर्तमान URL पाथ के आधार पर इतिहास में स्टेट लॉक करें ताकि बैक करने पर 404 न आए
+    if (!history.state || history.state.page !== 'home') {
+        history.replaceState({ page: 'home' }, '', window.location.pathname);
+    }
+}); 
 
 // जब यूजर ब्राउज़र का बैक (Back) बटन दबाए, तो उसे 404 पर भेजने के बजाय सीधे होमपेज व्यू दिखाएं
 window.addEventListener('popstate', (event) => {
     showHomepage();
-    history.pushState({ page: 'home' }, '');
+    history.pushState({ page: 'home' }, '', window.location.pathname);
 });
 
 // Supabase से लाइव प्रोडक्ट्स डाउनलोड करने का फ़ंक्शन
-async function fetchLiveProducts() { //
-    const grid = document.getElementById('products-grid'); //
-    if(grid) grid.innerHTML = `<div class="col-span-4 text-center text-gray-400 py-12 font-bold text-xs">Loading live vault collection...</div>`; //
+async function fetchLiveProducts() { 
+    const grid = document.getElementById('products-grid'); 
+    if(grid) grid.innerHTML = `<div class="col-span-4 text-center text-gray-400 py-12 font-bold text-xs">Loading live vault collection...</div>`; 
 
-    const { data: products, error } = await _supabase.from('products').select('*'); //
-    if (error) { //
-        console.error("Error fetching live products:", error); //
-        if(grid) grid.innerHTML = `<div class="col-span-4 text-center text-red-500 py-12 font-bold text-xs">Failed to synchronize catalog stack.</div>`; //
-        return; //
-    } //
+    const { data: products, error } = await _supabase.from('products').select('*'); 
+    if (error) { 
+        console.error("Error fetching live products:", error); 
+        if(grid) grid.innerHTML = `<div class="col-span-4 text-center text-red-500 py-12 font-bold text-xs">Failed to synchronize catalog stack.</div>`; 
+        return; 
+    } 
 
-    globalCachedProducts = products.map(p => { //
-        let imgArray = []; //
-        if (p.images) { //
-            try { //
-                imgArray = typeof p.images === 'string' ? JSON.parse(p.images) : p.images; //
-            } catch(e) { //
-                imgArray = [p.images]; //
-            } //
-        } //
-        return { //
-            id: p.id, //
-            brand: p.brand || '', //
-            name: p.name || '', //
-            category: p.category || '', //
-            stockStatus: p.stockStatus || 'in', //
-            price: p.price || '0', //
-            images: imgArray, //
-            sizes: p.sizes ? p.sizes.split(',').map(s => s.trim()) : [], //
-            colors: p.colors ? p.colors.split(',').map(c => c.trim()) : [], //
-            sizeChartImg: p.sizeChartImg || '', //
-            desc: p.desc || '', //
-            reviewsText: p.reviewsText || '' //
-        }; //
-    }); //
+    globalCachedProducts = products.map(p => { 
+        let imgArray = []; 
+        if (p.images) { 
+            try { 
+                imgArray = typeof p.images === 'string' ? JSON.parse(p.images) : p.images; 
+            } catch(e) { 
+                imgArray = [p.images]; 
+            } 
+        } 
+        return { 
+            id: p.id, 
+            brand: p.brand || '', 
+            name: p.name || '', 
+            category: p.category || '', 
+            stockStatus: p.stockStatus || 'in', 
+            price: p.price || '0', 
+            images: imgArray, 
+            sizes: p.sizes ? p.sizes.split(',').map(s => s.trim()) : [], 
+            colors: p.colors ? p.colors.split(',').map(c => c.trim()) : [], 
+            sizeChartImg: p.sizeChartImg || '', 
+            desc: p.desc || '', 
+            reviewsText: p.reviewsText || '' 
+        }; 
+    }); 
 
-    renderProducts(getAiSortedProducts(globalCachedProducts)); //
-} //
+    renderProducts(getAiSortedProducts(globalCachedProducts)); 
+} 
 
-function getProducts() {  //
-    return globalCachedProducts;  //
-} //
+function getProducts() {  
+    return globalCachedProducts;  
+} 
 
-function showHomepage() {  //
-    document.getElementById('homepage-view').classList.remove('hidden');  //
-    document.getElementById('details-view').classList.add('hidden');  //
-    if (document.getElementById('profile-view')) { //
-        document.getElementById('profile-view').classList.add('hidden'); //
-    } //
-    renderProducts(getAiSortedProducts(getProducts())); //
-} //
+function showHomepage() {  
+    document.getElementById('homepage-view').classList.remove('hidden');  
+    document.getElementById('details-view').classList.add('hidden');  
+    if (document.getElementById('profile-view')) { 
+        document.getElementById('profile-view').classList.add('hidden'); 
+    } 
+    renderProducts(getAiSortedProducts(getProducts())); 
+} 
 
-function toggleDarkMode() { document.documentElement.classList.toggle('dark'); } //
-function toggleCart() { document.getElementById('cart-sidebar').classList.toggle('translate-x-full'); } //
-function closeCheckoutModal() { document.getElementById('checkout-modal').classList.add('hidden'); } //
+function toggleDarkMode() { document.documentElement.classList.toggle('dark'); } 
+function toggleCart() { document.getElementById('cart-sidebar').classList.toggle('translate-x-full'); } 
+function closeCheckoutModal() { document.getElementById('checkout-modal').classList.add('hidden'); } 
 
-function filterCategory(brandName) { //
-    showHomepage(); //
-    let list = getProducts(); //
-    if(brandName) { //
-        list = list.filter(p => p.brand.toLowerCase() === brandName.toLowerCase() || p.category.toLowerCase() === brandName.toLowerCase()); //
-    } //
-    renderProducts(getAiSortedProducts(list)); //
-} //
+function filterCategory(brandName) { 
+    showHomepage(); 
+    let list = getProducts(); 
+    if(brandName) { 
+        list = list.filter(p => p.brand.toLowerCase() === brandName.toLowerCase() || p.category.toLowerCase() === brandName.toLowerCase()); 
+    } 
+    renderProducts(getAiSortedProducts(list)); 
+} 
 
-function getAiSortedProducts(list) { //
-    let interest = JSON.parse(localStorage.getItem('velvora_ai_interest')) || {}; //
-    return list.sort((a, b) => { //
-        let scoreA = (interest[a.category.toLowerCase()] || 0) + (interest[a.brand.toLowerCase()] || 0); //
-        let scoreB = (interest[b.category.toLowerCase()] || 0) + (interest[b.brand.toLowerCase()] || 0); //
-        return scoreB - scoreA; //
-    }); //
-} //
+function getAiSortedProducts(list) { 
+    let interest = JSON.parse(localStorage.getItem('velvora_ai_interest')) || {}; 
+    return list.sort((a, b) => { 
+        let scoreA = (interest[a.category.toLowerCase()] || 0) + (interest[a.brand.toLowerCase()] || 0); 
+        let scoreB = (interest[b.category.toLowerCase()] || 0) + (interest[b.brand.toLowerCase()] || 0); 
+        return scoreB - scoreA; 
+    }); 
+} 
 
-function initSearchEngine() { //
-    const searchBox = document.getElementById('search-box'); //
-    if (!searchBox) return; //
-    searchBox.addEventListener('input', (e) => { //
-        const query = e.target.value.toLowerCase().trim(); //
-        let allItems = getProducts(); //
-        if (query !== '') { //
-            allItems = allItems.filter(p =>  //
-                p.name.toLowerCase().includes(query) ||  //
-                p.brand.toLowerCase().includes(query) ||  //
-                p.category.toLowerCase().includes(query) //
-            ); //
-        } //
-        renderProducts(getAiSortedProducts(allItems)); //
-    }); //
-} //
+function initSearchEngine() { 
+    const searchBox = document.getElementById('search-box'); 
+    if (!searchBox) return; 
+    searchBox.addEventListener('input', (e) => { 
+        const query = e.target.value.toLowerCase().trim(); 
+        let allItems = getProducts(); 
+        if (query !== '') { 
+            allItems = allItems.filter(p =>  
+                p.name.toLowerCase().includes(query) ||  
+                p.brand.toLowerCase().includes(query) ||  
+                p.category.toLowerCase().includes(query) 
+            ); 
+        } 
+        renderProducts(getAiSortedProducts(allItems)); 
+    }); 
+} 
 
-function renderProducts(list) { //
-    const grid = document.getElementById('products-grid'); //
-    if(!grid) return;  //
-    grid.innerHTML = ''; //
-     //
-    if(list.length === 0) { //
-        grid.innerHTML = `<div class="col-span-4 text-center text-gray-400 py-12 font-bold text-xs">No curated items active in this index loop.</div>`; //
-        return; //
-    } //
+function renderProducts(list) { 
+    const grid = document.getElementById('products-grid'); 
+    if(!grid) return;  
+    grid.innerHTML = ''; 
+     
+    if(list.length === 0) { 
+        grid.innerHTML = `<div class="col-span-4 text-center text-gray-400 py-12 font-bold text-xs">No curated items active in this index loop.</div>`; 
+        return; 
+    } 
 
-    list.forEach(p => { //
-        const mImg = p.images && p.images[0] ? p.images[0] : ''; //
-        const hImg = p.images && p.images[1] ? p.images[1] : mImg; //
-        const rawPrice = p.price ? p.price.toString().replace(/[^\d]/g, '') : '0'; //
-         //
+    list.forEach(p => { 
+        const mImg = p.images && p.images[0] ? p.images[0] : ''; 
+        const hImg = p.images && p.images[1] ? p.images[1] : mImg; 
+        const rawPrice = p.price ? p.price.toString().replace(/[^\d]/g, '') : '0'; 
+         
         grid.innerHTML += `
             <div class="product-card bg-white p-2 border border-gray-100 rounded-lg cursor-pointer dark:bg-[#121212] dark:border-gray-900" onclick="openProduct(${p.id})">
                 <div class="aspect-[3/4] rounded-md overflow-hidden mb-1.5 bg-gray-50 dark:bg-[#1a1a1a] relative">
@@ -160,169 +162,169 @@ function renderProducts(list) { //
                 <h3 class="font-bold text-[11px] truncate text-black dark:text-white">${p.name}</h3>
                 <span class="font-black text-black dark:text-white block text-[11px] mt-0.5">₹${parseInt(rawPrice).toLocaleString('en-IN')}</span>
             </div>
-        `; //
-    }); //
-} //
+        `; 
+    }); 
+} 
 
-function openProduct(id) { //
-    const p = getProducts().find(prod => prod.id == id); //
-    if(!p) return; //
+function openProduct(id) { 
+    const p = getProducts().find(prod => prod.id == id); 
+    if(!p) return; 
 
-    let interest = JSON.parse(localStorage.getItem('velvora_ai_interest')) || {}; //
-    interest[p.category.toLowerCase()] = (interest[p.category.toLowerCase()] || 0) + 1; //
-    interest[p.brand.toLowerCase()] = (interest[p.brand.toLowerCase()] || 0) + 1; //
-    localStorage.setItem('velvora_ai_interest', JSON.stringify(interest)); //
+    let interest = JSON.parse(localStorage.getItem('velvora_ai_interest')) || {}; 
+    interest[p.category.toLowerCase()] = (interest[p.category.toLowerCase()] || 0) + 1; 
+    interest[p.brand.toLowerCase()] = (interest[p.brand.toLowerCase()] || 0) + 1; 
+    localStorage.setItem('velvora_ai_interest', JSON.stringify(interest)); 
 
-    currentProductPhotos = p.images || []; //
-    selectedSize = null;  //
-    selectedColor = p.colors?.[0] || "Default"; //
+    currentProductPhotos = p.images || []; 
+    selectedSize = null;  
+    selectedColor = p.colors?.[0] || "Default"; 
 
-    document.getElementById('homepage-view').classList.add('hidden'); //
-    if (document.getElementById('profile-view')) { //
-        document.getElementById('profile-view').classList.add('hidden'); //
-    } //
-    document.getElementById('details-view').classList.remove('hidden'); //
-     //
-    document.getElementById('detail-brand').innerText = p.brand; //
-    document.getElementById('detail-title').innerText = p.name; //
-     //
-    const rawPrice = p.price ? p.price.toString().replace(/[^\d]/g, '') : '0'; //
-    document.getElementById('detail-price').innerText = '₹' + parseInt(rawPrice).toLocaleString('en-IN'); //
-     //
-    const mainImg = document.getElementById('detail-main-img'); //
-    mainImg.src = currentProductPhotos[0] || ''; //
+    document.getElementById('homepage-view').classList.add('hidden'); 
+    if (document.getElementById('profile-view')) { 
+        document.getElementById('profile-view').classList.add('hidden'); 
+    } 
+    document.getElementById('details-view').classList.remove('hidden'); 
+     
+    document.getElementById('detail-brand').innerText = p.brand; 
+    document.getElementById('detail-title').innerText = p.name; 
+     
+    const rawPrice = p.price ? p.price.toString().replace(/[^\d]/g, '') : '0'; 
+    document.getElementById('detail-price').innerText = '₹' + parseInt(rawPrice).toLocaleString('en-IN'); 
+     
+    const mainImg = document.getElementById('detail-main-img'); 
+    mainImg.src = currentProductPhotos[0] || ''; 
 
-    const thumbContainer = document.getElementById('detail-thumbnails'); //
-    thumbContainer.innerHTML = ''; //
-    currentProductPhotos.forEach((imgUrl, idx) => { //
-        if(imgUrl) { //
-            const tImg = document.createElement('img'); //
-            tImg.src = imgUrl; //
-            tImg.className = `w-10 h-14 object-cover rounded border cursor-pointer hover:border-black dark:hover:border-white transition ${idx === 0 ? 'border-black dark:border-white' : 'border-gray-200 dark:border-gray-800'}`; //
-            tImg.onclick = () => { //
-                mainImg.src = imgUrl; //
-                document.querySelectorAll('#detail-thumbnails img').forEach(img => img.className = 'w-10 h-14 object-cover rounded border cursor-pointer border-gray-200 dark:border-gray-800'); //
-                tImg.className = 'w-10 h-14 object-cover rounded border cursor-pointer border-black dark:border-white'; //
-            }; //
-            thumbContainer.appendChild(tImg); //
-        } //
-    }); //
+    const thumbContainer = document.getElementById('detail-thumbnails'); 
+    thumbContainer.innerHTML = ''; 
+    currentProductPhotos.forEach((imgUrl, idx) => { 
+        if(imgUrl) { 
+            const tImg = document.createElement('img'); 
+            tImg.src = imgUrl; 
+            tImg.className = `w-10 h-14 object-cover rounded border cursor-pointer hover:border-black dark:hover:border-white transition ${idx === 0 ? 'border-black dark:border-white' : 'border-gray-200 dark:border-gray-800'}`; 
+            tImg.onclick = () => { 
+                mainImg.src = imgUrl; 
+                document.querySelectorAll('#detail-thumbnails img').forEach(img => img.className = 'w-10 h-14 object-cover rounded border cursor-pointer border-gray-200 dark:border-gray-800'); 
+                tImg.className = 'w-10 h-14 object-cover rounded border cursor-pointer border-black dark:border-white'; 
+            }; 
+            thumbContainer.appendChild(tImg); 
+        } 
+    }); 
 
-    const stockBadge = document.getElementById('stock-badge'); //
-    if(p.stockStatus === "out") { //
-        stockBadge.className = "bg-red-50 text-red-700 text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider"; //
-        stockBadge.innerText = "OUT OF ALLOCATION"; //
-    } else { //
-        stockBadge.className = "bg-gray-100 text-black text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider dark:bg-gray-800 dark:text-white"; //
-        stockBadge.innerText = "STOCK ALLOCATED"; //
-    } //
+    const stockBadge = document.getElementById('stock-badge'); 
+    if(p.stockStatus === "out") { 
+        stockBadge.className = "bg-red-50 text-red-700 text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider"; 
+        stockBadge.innerText = "OUT OF ALLOCATION"; 
+    } else { 
+        stockBadge.className = "bg-gray-100 text-black text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider dark:bg-gray-800 dark:text-white"; 
+        stockBadge.innerText = "STOCK ALLOCATED"; 
+    } 
 
-    const cc = document.getElementById('detail-colors-list'); cc.innerHTML = ''; //
-    if(p.colors && p.colors.length > 0) { //
-        p.colors.forEach((color, idx) => { //
-            const btn = document.createElement('button'); btn.innerText = color; //
-            btn.className = "border px-2.5 py-1 text-[10px] font-bold uppercase rounded bg-white text-black dark:bg-[#1a1a1a] dark:text-white dark:border-gray-800 transition " + (idx === 0 ? "border-black dark:border-white ring-1 ring-black dark:ring-white" : ""); //
-            btn.onclick = () => { //
-                selectedColor = color;  //
-                document.querySelectorAll('#detail-colors-list button').forEach(b => b.className = "border px-2.5 py-1 text-[10px] font-bold uppercase rounded bg-white text-black dark:bg-[#1a1a1a] dark:text-white dark:border-gray-800 transition"); //
-                btn.className = "border px-2.5 py-1 text-[10px] font-bold uppercase rounded bg-white text-black dark:bg-[#1a1a1a] dark:text-white dark:border-gray-800 transition border-black dark:border-white ring-1 ring-black dark:ring-white"; //
-            }; //
-            cc.appendChild(btn); //
-        }); //
-    } //
+    const cc = document.getElementById('detail-colors-list'); cc.innerHTML = ''; 
+    if(p.colors && p.colors.length > 0) { 
+        p.colors.forEach((color, idx) => { 
+            const btn = document.createElement('button'); btn.innerText = color; 
+            btn.className = "border px-2.5 py-1 text-[10px] font-bold uppercase rounded bg-white text-black dark:bg-[#1a1a1a] dark:text-white dark:border-gray-800 transition " + (idx === 0 ? "border-black dark:border-white ring-1 ring-black dark:ring-white" : ""); 
+            btn.onclick = () => { 
+                selectedColor = color;  
+                document.querySelectorAll('#detail-colors-list button').forEach(b => b.className = "border px-2.5 py-1 text-[10px] font-bold uppercase rounded bg-white text-black dark:bg-[#1a1a1a] dark:text-white dark:border-gray-800 transition"); 
+                btn.className = "border px-2.5 py-1 text-[10px] font-bold uppercase rounded bg-white text-black dark:bg-[#1a1a1a] dark:text-white dark:border-gray-800 transition border-black dark:border-white ring-1 ring-black dark:ring-white"; 
+            }; 
+            cc.appendChild(btn); 
+        }); 
+    } 
 
-    const sc = document.getElementById('detail-sizes-list'); sc.innerHTML = ''; //
-    if(p.sizes && p.sizes.length > 0) { //
-        p.sizes.forEach(size => { //
-            const btn = document.createElement('button'); btn.innerText = size; //
-            btn.className = "w-8 h-8 border rounded-md flex items-center justify-center text-[10px] font-black bg-white text-black dark:bg-[#1a1a1a] dark:text-white dark:border-gray-800 transition"; //
-            btn.onclick = () => { //
-                selectedSize = size;  //
-                document.querySelectorAll('#detail-sizes-list button').forEach(b => b.className = "w-8 h-8 border rounded-md flex items-center justify-center text-[10px] font-black bg-white text-black dark:bg-[#1a1a1a] dark:text-white dark:border-gray-800 transition"); //
-                btn.className = "w-8 h-8 border rounded-md flex items-center justify-center text-[10px] font-black bg-black text-white dark:bg-white dark:text-black transition"; //
-            }; //
-            sc.appendChild(btn); //
-        }); //
-    } //
+    const sc = document.getElementById('detail-sizes-list'); sc.innerHTML = ''; 
+    if(p.sizes && p.sizes.length > 0) { 
+        p.sizes.forEach(size => { 
+            const btn = document.createElement('button'); btn.innerText = size; 
+            btn.className = "w-8 h-8 border rounded-md flex items-center justify-center text-[10px] font-black bg-white text-black dark:bg-[#1a1a1a] dark:text-white dark:border-gray-800 transition"; 
+            btn.onclick = () => { 
+                selectedSize = size;  
+                document.querySelectorAll('#detail-sizes-list button').forEach(b => b.className = "w-8 h-8 border rounded-md flex items-center justify-center text-[10px] font-black bg-white text-black dark:bg-[#1a1a1a] dark:text-white dark:border-gray-800 transition"); 
+                btn.className = "w-8 h-8 border rounded-md flex items-center justify-center text-[10px] font-black bg-black text-white dark:bg-white dark:text-black transition"; 
+            }; 
+            sc.appendChild(btn); 
+        }); 
+    } 
 
-    window.currentSizeChartImg = p.sizeChartImg || "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=600"; //
+    window.currentSizeChartImg = p.sizeChartImg || "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=600"; 
 
-    window.productTabContext = { //
-        desc: p.desc || "No narrative injected.", //
-        additional: `Material Grid: ${p.colors ? p.colors.join(', ') : 'N/A'} / Size Layer: ${p.sizes ? p.sizes.join(', ') : 'N/A'}`, //
-        reviews: p.reviewsText || "⭐ Clean feedback log." //
-    }; //
-    switchTab('desc'); //
+    window.productTabContext = { 
+        desc: p.desc || "No narrative injected.", 
+        additional: `Material Grid: ${p.colors ? p.colors.join(', ') : 'N/A'} / Size Layer: ${p.sizes ? p.sizes.join(', ') : 'N/A'}`, 
+        reviews: p.reviewsText || "⭐ Clean feedback log." 
+    }; 
+    switchTab('desc'); 
 
-    const suggestionsGrid = document.getElementById('suggestions-grid'); //
-    if(suggestionsGrid) { //
-        suggestionsGrid.innerHTML = ''; //
-        const related = getProducts().filter(prod => prod.id !== p.id && (prod.brand === p.brand || prod.category === p.category)); //
-        const aiSortedRelated = getAiSortedProducts(related).slice(0, 4); //
-         //
-        aiSortedRelated.forEach(rp => { //
+    const suggestionsGrid = document.getElementById('suggestions-grid'); 
+    if(suggestionsGrid) { 
+        suggestionsGrid.innerHTML = ''; 
+        const related = getProducts().filter(prod => prod.id !== p.id && (prod.brand === p.brand || prod.category === p.category)); 
+        const aiSortedRelated = getAiSortedProducts(related).slice(0, 4); 
+         
+        aiSortedRelated.forEach(rp => { 
             suggestionsGrid.innerHTML += `
                 <div class="border rounded-lg p-1.5 bg-white cursor-pointer hover:shadow-xs transition dark:bg-[#121212] dark:border-gray-900" onclick="openProduct(${rp.id})">
                     <img src="${rp.images[0]}" class="w-full aspect-[3/4] object-cover rounded mb-1">
                     <h4 class="font-bold text-[10px] truncate text-black dark:text-white">${rp.name}</h4>
                     <span class="text-black dark:text-white font-black text-[9px]">₹${parseInt(rp.price).toLocaleString('en-IN')}</span>
                 </div>
-            `; //
-        }); //
-    } //
+            `; 
+        }); 
+    } 
 
-    document.getElementById('add-to-cart-btn').onclick = () => { //
-        if(!selectedSize) return alert("🚨 Please select your Size first!"); //
-        if(p.stockStatus === "out") return alert("This drop is out of stock!"); //
-        cart.push({ ...p, chosenSize: selectedSize, chosenColor: selectedColor }); //
-        updateCart(); //
-        alert('Added to Bag! 🛒'); //
-    }; //
+    document.getElementById('add-to-cart-btn').onclick = () => { 
+        if(!selectedSize) return alert("🚨 Please select your Size first!"); 
+        if(p.stockStatus === "out") return alert("This drop is out of stock!"); 
+        cart.push({ ...p, chosenSize: selectedSize, chosenColor: selectedColor }); 
+        updateCart(); 
+        alert('Added to Bag! 🛒'); 
+    }; 
 
-    document.getElementById('buy-now-btn').onclick = () => { //
-        if(!selectedSize) return alert("🚨 Please select your Size first before Instant Checkout!"); //
-        if(p.stockStatus === "out") return alert("This drop is out of stock!"); //
-        let priceVal = parseInt(rawPrice) || 0; //
-        window.checkoutItemDetails = `Brand: [${p.brand}] \nProduct: ${p.name}\nSize: ${selectedSize}\nColor: ${selectedColor}\nPrice Summary: ₹${priceVal}`; //
-        openStepCheckout(); //
-    }; //
-} //
+    document.getElementById('buy-now-btn').onclick = () => { 
+        if(!selectedSize) return alert("🚨 Please select your Size first before Instant Checkout!"); 
+        if(p.stockStatus === "out") return alert("This drop is out of stock!"); 
+        let priceVal = parseInt(rawPrice) || 0; 
+        window.checkoutItemDetails = `Brand: [${p.brand}] \nProduct: ${p.name}\nSize: ${selectedSize}\nColor: ${selectedColor}\nPrice Summary: ₹${priceVal}`; 
+        openStepCheckout(); 
+    }; 
+} 
 
-function switchTab(tabName) { //
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.className = "tab-btn px-4 py-2.5 border-b-2 border-transparent"); //
-    const targetedTab = document.getElementById(`tab-${tabName}`); //
-    if(targetedTab) targetedTab.className = "tab-btn px-4 py-2.5 border-b-2 border-black dark:border-white text-black dark:text-white"; //
-     //
-    const contentArea = document.getElementById('tab-content-area'); //
-    if(contentArea && window.productTabContext) { //
-        contentArea.innerText = window.productTabContext[tabName] || ''; //
-    } //
-} //
+function switchTab(tabName) { 
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.className = "tab-btn px-4 py-2.5 border-b-2 border-transparent"); 
+    const targetedTab = document.getElementById(`tab-${tabName}`); 
+    if(targetedTab) targetedTab.className = "tab-btn px-4 py-2.5 border-b-2 border-black dark:border-white text-black dark:text-white"; 
+     
+    const contentArea = document.getElementById('tab-content-area'); 
+    if(contentArea && window.productTabContext) { 
+        contentArea.innerText = window.productTabContext[tabName] || ''; 
+    } 
+} 
 
-function openSizeChartModal() { //
-    document.getElementById('size-chart-img').src = window.currentSizeChartImg; //
-    document.getElementById('size-chart-modal').classList.remove('hidden'); //
-} //
-function closeSizeChartModal() { //
-    document.getElementById('size-chart-modal').classList.add('hidden'); //
-} //
+function openSizeChartModal() { 
+    document.getElementById('size-chart-img').src = window.currentSizeChartImg; 
+    document.getElementById('size-chart-modal').classList.remove('hidden'); 
+} 
+function closeSizeChartModal() { 
+    document.getElementById('size-chart-modal').classList.add('hidden'); 
+} 
 
-function updateUserNavUi() { //
-    const authBtn = document.getElementById('user-auth-nav-btn'); //
-    if (!authBtn) return; //
-    if (currentUser) { //
-        authBtn.innerHTML = `<i class="fa-solid fa-circle-user text-sm animate-pulse"></i> <span>${currentUser.substring(0, 10)}...</span>`; //
-        authBtn.onclick = () => showProfileDashboard(); //
-    } else { //
-        authBtn.innerHTML = `<i class="fa-solid fa-lock text-xs"></i> <span>Login</span>`; //
-        authBtn.onclick = () => openAuthModal(); //
-    } //
-} //
+function updateUserNavUi() { 
+    const authBtn = document.getElementById('user-auth-nav-btn'); 
+    if (!authBtn) return; 
+    if (currentUser) { 
+        authBtn.innerHTML = `<i class="fa-solid fa-circle-user text-sm animate-pulse"></i> <span>${currentUser.substring(0, 10)}...</span>`; 
+        authBtn.onclick = () => showProfileDashboard(); 
+    } else { 
+        authBtn.innerHTML = `<i class="fa-solid fa-lock text-xs"></i> <span>Login</span>`; 
+        authBtn.onclick = () => openAuthModal(); 
+    } 
+} 
 
-// 2. नया ईमेल-पासवर्ड और गूगल लॉगिन फॉर्म (Design)
-function openAuthModal() { //
-    const modal = document.getElementById('checkout-modal'); //
-    modal.classList.remove('hidden'); //
+// 2. नया ईमेल-पासवर्ड लॉगिन फॉर्म (Google Button Removed)
+function openAuthModal() { 
+    const modal = document.getElementById('checkout-modal'); 
+    modal.classList.remove('hidden'); 
     modal.innerHTML = `
         <div class="bg-white max-w-sm w-full p-6 rounded-2xl relative dark:bg-[#121212] text-xs font-bold space-y-4 shadow-xl animate-3d-wave">
             <button onclick="closeCheckoutModal()" class="absolute top-4 right-4 text-sm">✕</button>
@@ -342,90 +344,68 @@ function openAuthModal() { //
                     <button onclick="handleEmailAuth('signin')" class="w-1/2 bg-black text-white py-2.5 uppercase rounded text-[9px] tracking-wider font-black dark:bg-white dark:text-black">Sign In</button>
                     <button onclick="handleEmailAuth('signup')" class="w-1/2 bg-gray-200 text-black py-2.5 uppercase rounded text-[9px] tracking-wider font-black dark:bg-gray-700 dark:text-white">Sign Up</button>
                 </div>
-
-                <div class="relative flex py-2 items-center">
-                    <div class="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
-                    <span class="flex-shrink mx-4 text-gray-400 text-[9px] uppercase">OR</span>
-                    <div class="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
-                </div>
-
-                <button onclick="handleGoogleAuth()" class="w-full bg-red-600 text-white py-2.5 uppercase rounded text-[10px] tracking-widest font-black flex items-center justify-center gap-2 shadow-md">
-                    <i class="fa-brands fa-google"></i> Continue with Google
-                </button>
             </div>
         </div>
-    `; //
-} //
+    `; 
+} 
 
-// 3. ईमेल और पासवर्ड से साइन-इन / साइन-अप करने का नया फंक्शन
-function handleEmailAuth(type) { //
-    const email = document.getElementById('auth-email-input').value.trim(); //
-    const password = document.getElementById('auth-password-input').value.trim(); //
+// 3. ईमेल और पासवर्ड से साइन-इन / साइन-अप करने का फंक्शन
+function handleEmailAuth(type) { 
+    const email = document.getElementById('auth-email-input').value.trim(); 
+    const password = document.getElementById('auth-password-input').value.trim(); 
 
-    if (!email || !password) { //
-        return alert("🚨 कृपया ईमेल और पासवर्ड दोनों दर्ज करें!"); //
-    } //
+    if (!email || !password) { 
+        return alert("🚨 कृपया ईमेल और पासवर्ड दोनों दर्ज करें!"); 
+    } 
 
-    if (type === 'signup') { //
-        firebase.auth().createUserWithEmailAndPassword(email, password) //
-            .then((result) => { //
-                successLogin(result.user.email); //
-            }) //
-            .catch((error) => { //
-                alert("❌ साइन-अप में समस्या: " + error.message); //
-            }); //
-    } else { //
-        firebase.auth().signInWithEmailAndPassword(email, password) //
-            .then((result) => { //
-                successLogin(result.user.email); //
-            }) //
-            .catch((error) => { //
-                alert("❌ लॉगिन में समस्या: " + error.message); //
-            }); //
-    } //
-} //
-
-// 4. गूगल से साइन-इन करने का नया फंक्शन
-function handleGoogleAuth() { //
-    const provider = new firebase.auth.GoogleAuthProvider(); //
-    firebase.auth().signInWithPopup(provider) //
-        .then((result) => { //
-            successLogin(result.user.email); //
-        }) //
-        .catch((error) => { //
-            alert("❌ Google लॉगिन असफल: " + error.message); //
-        }); //
-} //
+    if (type === 'signup') { 
+        firebase.auth().createUserWithEmailAndPassword(email, password) 
+            .then((result) => { 
+                successLogin(result.user.email); 
+            }) 
+            .catch((error) => { 
+                alert("❌ साइन-अप में समस्या: " + error.message); 
+            }); 
+    } else { 
+        firebase.auth().signInWithEmailAndPassword(email, password) 
+            .then((result) => { 
+                successLogin(result.user.email); 
+            }) 
+            .catch((error) => { 
+                alert("❌ लॉगिन में समस्या: " + error.message); 
+            }); 
+    } 
+} 
 
 // लॉगिन सफल होने का कॉमन लॉजिक
-function successLogin(userIdentifier) { //
-    currentUser = userIdentifier; //
-    localStorage.setItem('velvora_current_user', JSON.stringify(currentUser)); //
-     //
-    let orderLog = JSON.parse(localStorage.getItem(`orders_${currentUser}`)) || []; //
-    localStorage.setItem(`orders_${currentUser}`, JSON.stringify(orderLog)); //
+function successLogin(userIdentifier) { 
+    currentUser = userIdentifier; 
+    localStorage.setItem('velvora_current_user', JSON.stringify(currentUser)); 
+     
+    let orderLog = JSON.parse(localStorage.getItem(`orders_${currentUser}`)) || []; 
+    localStorage.setItem(`orders_${currentUser}`, JSON.stringify(orderLog)); 
 
-    closeCheckoutModal(); //
-    updateUserNavUi(); //
-    alert(`🎉 लॉगिन सफल! स्वागत है वेल्वोरा स्टोर पर!`); //
-} //
+    closeCheckoutModal(); 
+    updateUserNavUi(); 
+    alert(`🎉 लॉगिन सफल! स्वागत है वेल्वोरा स्टोर पर!`); 
+} 
 
-function executeProfileLogout() { //
-    currentUser = null; //
-    localStorage.removeItem('velvora_current_user'); //
-    showHomepage(); //
-    updateUserNavUi(); //
-    alert("Logged out safely."); //
-} //
+function executeProfileLogout() { 
+    currentUser = null; 
+    localStorage.removeItem('velvora_current_user'); 
+    showHomepage(); 
+    updateUserNavUi(); 
+    alert("Logged out safely."); 
+} 
 
-function showProfileDashboard() { //
-    if (!currentUser) return openAuthModal(); //
-    document.getElementById('homepage-view').classList.add('hidden'); //
-    document.getElementById('details-view').classList.add('hidden'); //
-    const pView = document.getElementById('profile-view'); //
-    if (!pView) return; //
-    pView.classList.remove('hidden'); //
-    const orders = JSON.parse(localStorage.getItem(`orders_${currentUser}`)) || []; //
+function showProfileDashboard() { 
+    if (!currentUser) return openAuthModal(); 
+    document.getElementById('homepage-view').classList.add('hidden'); 
+    document.getElementById('details-view').classList.add('hidden'); 
+    const pView = document.getElementById('profile-view'); 
+    if (!pView) return; 
+    pView.classList.remove('hidden'); 
+    const orders = JSON.parse(localStorage.getItem(`orders_${currentUser}`)) || []; 
 
     pView.innerHTML = `
         <div class="max-w-4xl mx-auto space-y-6 animate-3d-wave">
@@ -455,13 +435,13 @@ function showProfileDashboard() { //
                 <div class="space-y-3" id="profile-orders-history-container"></div>
             </div>
         </div>
-    `; //
+    `; 
 
-    const container = document.getElementById('profile-orders-history-container'); //
-    if (orders.length === 0) { //
-        container.innerHTML = `<p class="text-xs text-gray-400 font-bold py-4 text-center">You haven't placed any capsule drops yet.</p>`; //
-    } else { //
-        orders.forEach(ord => { //
+    const container = document.getElementById('profile-orders-history-container'); 
+    if (orders.length === 0) { 
+        container.innerHTML = `<p class="text-xs text-gray-400 font-bold py-4 text-center">You haven't placed any capsule drops yet.</p>`; 
+    } else { 
+        orders.forEach(ord => { 
             container.innerHTML += `
                 <div class="border rounded-xl p-4 bg-gray-50 dark:bg-[#181818] dark:border-gray-800 text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-3xs">
                     <div>
@@ -475,24 +455,24 @@ function showProfileDashboard() { //
                         <span class="bg-green-100 text-green-700 px-2.5 py-1 rounded text-[9px] font-black uppercase tracking-wider">Dispatched via WhatsApp</span>
                     </div>
                 </div>
-            `; //
-        }); //
-    } //
-} //
+            `; 
+        }); 
+    } 
+} 
 
-function openStepCheckout() { //
-    if (!currentUser) { //
-        alert("🔒 SECURITY PROTOCOL: Please login / build your profile space layout first!"); //
-        openAuthModal(); //
-        return; //
-    } //
-    document.getElementById('checkout-modal').classList.remove('hidden'); //
-    showCheckoutStep(2);  //
-} //
+function openStepCheckout() { 
+    if (!currentUser) { 
+        alert("🔒 SECURITY PROTOCOL: Please login / build your profile space layout first!"); 
+        openAuthModal(); 
+        return; 
+    } 
+    document.getElementById('checkout-modal').classList.remove('hidden'); 
+    showCheckoutStep(2);  
+} 
 
-function showCheckoutStep(stepNum) { //
-    const modal = document.getElementById('checkout-modal'); //
-    if (stepNum === 2) { //
+function showCheckoutStep(stepNum) { 
+    const modal = document.getElementById('checkout-modal'); 
+    if (stepNum === 2) { 
         modal.innerHTML = `
             <div class="bg-white max-w-sm w-full p-5 rounded-xl relative dark:bg-[#121212] text-xs font-bold space-y-3 shadow-xl animate-3d-wave">
                 <button onclick="closeCheckoutModal()" class="absolute top-3 right-3 text-sm">✕</button>
@@ -505,8 +485,8 @@ function showCheckoutStep(stepNum) { //
                 </div>
                 <button onclick="processCheckoutStep2()" class="w-full bg-black text-white py-2 uppercase rounded text-[10px] tracking-widest font-black dark:bg-white dark:text-black live-waving-btn shadow-md">Continue to Payments →</button>
             </div>
-        `; //
-    } else if (stepNum === 3) { //
+        `; 
+    } else if (stepNum === 3) { 
         modal.innerHTML = `
             <div class="bg-white max-w-sm w-full p-5 rounded-xl relative dark:bg-[#121212] text-xs font-bold space-y-4 shadow-xl animate-3d-wave">
                 <button onclick="closeCheckoutModal()" class="absolute top-3 right-3 text-sm">✕</button>
@@ -523,65 +503,65 @@ function showCheckoutStep(stepNum) { //
                 </div>
                 <button onclick="finalizeStepOrder()" class="w-full bg-emerald-600 text-white py-2.5 uppercase rounded text-[10px] font-black tracking-widest flex items-center justify-center gap-2 live-waving-btn shadow-md"><i class="fa-brands fa-whatsapp text-sm"></i> Route Order Stream via WhatsApp</button>
             </div>
-        `; //
-    } //
-} //
+        `; 
+    } 
+} 
 
-function processCheckoutStep2() { //
-    const name = document.getElementById('chk-name').value.trim(); //
-    const addr = document.getElementById('chk-address').value.trim(); //
-    const city = document.getElementById('chk-city').value.trim(); //
-    const pin = document.getElementById('chk-pincode').value.trim(); //
-    if(!name || !addr || !city || !pin) return alert('Complete delivery grid data required.'); //
-    window.checkoutAddressString = `Name: ${name}\nAddress Log: ${addr}, ${city} - ${pin}`; //
-    showCheckoutStep(3); //
-} //
+function processCheckoutStep2() { 
+    const name = document.getElementById('chk-name').value.trim(); 
+    const addr = document.getElementById('chk-address').value.trim(); 
+    const city = document.getElementById('chk-city').value.trim(); 
+    const pin = document.getElementById('chk-pincode').value.trim(); 
+    if(!name || !addr || !city || !pin) return alert('Complete delivery grid data required.'); 
+    window.checkoutAddressString = `Name: ${name}\nAddress Log: ${addr}, ${city} - ${pin}`; 
+    showCheckoutStep(3); 
+} 
 
-function finalizeStepOrder() { //
-    const selectedPay = document.querySelector('input[name="pay-method"]:checked').value; //
-    const orderId = 'VEL-' + Math.floor(100000 + Math.random() * 900000); //
-    const currentDateStr = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }); //
+function finalizeStepOrder() { 
+    const selectedPay = document.querySelector('input[name="pay-method"]:checked').value; 
+    const orderId = 'VEL-' + Math.floor(100000 + Math.random() * 900000); 
+    const currentDateStr = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }); 
 
-    let orderLog = JSON.parse(localStorage.getItem(`orders_${currentUser}`)) || []; //
-    orderLog.unshift({ //
-        id: orderId, //
-        date: currentDateStr, //
-        details: window.checkoutItemDetails, //
-        address: window.checkoutAddressString, //
-        payment: selectedPay //
-    }); //
-    localStorage.setItem(`orders_${currentUser}`, JSON.stringify(orderLog)); //
+    let orderLog = JSON.parse(localStorage.getItem(`orders_${currentUser}`)) || []; 
+    orderLog.unshift({ 
+        id: orderId, 
+        date: currentDateStr, 
+        details: window.checkoutItemDetails, 
+        address: window.checkoutAddressString, 
+        payment: selectedPay 
+    }); 
+    localStorage.setItem(`orders_${currentUser}`, JSON.stringify(orderLog)); 
 
-    let sales = JSON.parse(localStorage.getItem('nexwear_sales')) || { totalRevenue: 0, totalOrders: 0 }; //
-    let cleanPrice = parseInt(window.checkoutItemDetails.split('Price Summary: ₹')[1] || window.checkoutItemDetails.split('Collective Basket Value: ₹')[1] || '0'); //
-    sales.totalRevenue += cleanPrice; //
-    sales.totalOrders += 1; //
-    localStorage.setItem('nexwear_sales', JSON.stringify(sales)); //
+    let sales = JSON.parse(localStorage.getItem('nexwear_sales')) || { totalRevenue: 0, totalOrders: 0 }; 
+    let cleanPrice = parseInt(window.checkoutItemDetails.split('Price Summary: ₹')[1] || window.checkoutItemDetails.split('Collective Basket Value: ₹')[1] || '0'); 
+    sales.totalRevenue += cleanPrice; 
+    sales.totalOrders += 1; 
+    localStorage.setItem('nexwear_sales', JSON.stringify(sales)); 
 
-    const finalMsg = `*🚨 NEW CAPSULE ORDER SUBMISSION [VELVORA INC]*\n\n*Order Identification Trace:* ${orderId}\n*Customer Auth Trace:* ${currentUser}\n\n*Item Vector Structure:*\n${window.checkoutItemDetails}\n\n*Shipping Track Target:*\n${window.checkoutAddressString}\n\n*Payment Strategic Mode:* ${selectedPay}`; //
-     //
-    closeCheckoutModal(); //
-    cart = []; //
-    updateCart(); //
-    showHomepage(); //
-    window.open(`https://wa.me/917348588153?text=${encodeURIComponent(finalMsg)}`, '_blank'); //
-} //
+    const finalMsg = `*🚨 NEW CAPSULE ORDER SUBMISSION [VELVORA INC]*\n\n*Order Identification Trace:* ${orderId}\n*Customer Auth Trace:* ${currentUser}\n\n*Item Vector Structure:*\n${window.checkoutItemDetails}\n\n*Shipping Track Target:*\n${window.checkoutAddressString}\n\n*Payment Strategic Mode:* ${selectedPay}`; 
+     
+    closeCheckoutModal(); 
+    cart = []; 
+    updateCart(); 
+    showHomepage(); 
+    window.open(`https://wa.me/917348588153?text=${encodeURIComponent(finalMsg)}`, '_blank'); 
+} 
 
-function checkoutFromCart() { //
-    if (!currentUser) { //
-        alert("🔒 SECURITY PROTOCOL: Please login / build your profile space layout first!"); //
-        openAuthModal(); //
-        return; //
-    } //
-    if(cart.length === 0) return alert("Bag loop empty."); //
-    let summary = cart.map((p, idx) => `${idx+1}. [${p.brand}] ${p.name} (${p.chosenSize}/${p.chosenColor})`).join('\n'); //
-    let totalVal = cart.reduce((acc, p) => acc + (parseInt(p.price.toString().replace(/[^\d]/g, '')) || 0), 0); //
-    window.checkoutItemDetails = `${summary}\nCollective Basket Value: ₹${totalVal}`; //
-    toggleCart(); //
-    openStepCheckout(); //
-} //
+function checkoutFromCart() { 
+    if (!currentUser) { 
+        alert("🔒 SECURITY PROTOCOL: Please login / build your profile space layout first!"); 
+        openAuthModal(); 
+        return; 
+    } 
+    if(cart.length === 0) return alert("Bag loop empty."); 
+    let summary = cart.map((p, idx) => `${idx+1}. [${p.brand}] ${p.name} (${p.chosenSize}/${p.chosenColor})`).join('\n'); 
+    let totalVal = cart.reduce((acc, p) => acc + (parseInt(p.price.toString().replace(/[^\d]/g, '')) || 0), 0); 
+    window.checkoutItemDetails = `${summary}\nCollective Basket Value: ₹${totalVal}`; 
+    toggleCart(); 
+    openStepCheckout(); 
+} 
 
-function updateCart() { //
-    const count = cart.length; //
-    if(document.getElementById('cart-count')) document.getElementById('cart-count').innerText = count; //
-} //
+function updateCart() { 
+    const count = cart.length; 
+    if(document.getElementById('cart-count')) document.getElementById('cart-count').innerText = count; 
+}
