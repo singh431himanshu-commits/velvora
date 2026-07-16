@@ -148,10 +148,21 @@
         const SUPABASE_KEY = "sb_publishable_CHZd1TBq8DzM-ZUfgQJpOA_Ukjmiv6V";
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // डेटा रेंडर करने के लिए एक ग्लोबल वेरिएबल ताकि इनलाइन कोट्स का इश्यू न आए
         let localFetchedProducts = [];
 
-        window.addEventListener('DOMContentLoaded', () => { renderCatalogTable(); });
+        window.addEventListener('DOMContentLoaded', () => { 
+            renderCatalogTable(); 
+            
+            // 404 Error प्रिवेंशन हिस्ट्री लॉक
+            if (!history.state || history.state.page !== 'admin') {
+                history.replaceState({ page: 'admin' }, '', window.location.pathname);
+            }
+        });
+
+        // बैक बटन दबाने पर 404 रोकने और velvora.html पर री-डायरेक्ट करने का लॉजिक
+        window.addEventListener('popstate', (event) => {
+            window.location.href = "velvora.html";
+        });
 
         function convertFileToBase64(fileInput, textInputId) {
             const file = fileInput.files[0];
@@ -241,7 +252,6 @@
             alert('Database synchronized successfully!');
         }
 
-        // कोट्स ब्रेकडाउन से बचने के लिए इंडेक्स आधारित एडिट ट्रिगर
         function triggerEditMode(index) {
             const p = localFetchedProducts[index];
             if(!p) return;
