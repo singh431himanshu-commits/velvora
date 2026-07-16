@@ -42,7 +42,7 @@ window.addEventListener('popstate', (event) => {
     history.pushState({ page: 'home' }, '', window.location.pathname);
 });
 
-// Supabase से लाइव प्रोडक्ट्स डाउनलोड करने और शफल (रैंडम) करने का फ़ंक्शन
+// Supabase से लाइव प्रोडक्ट्स डाउनलोड करने और शफल करने का फ़ंक्शन
 async function fetchLiveProducts() { 
     const grid = document.getElementById('products-grid'); 
     if(grid) grid.innerHTML = `<div class="col-span-4 text-center text-gray-400 py-12 font-bold text-xs">Loading live vault collection...</div>`; 
@@ -79,9 +79,7 @@ async function fetchLiveProducts() {
         }; 
     }); 
 
-    // ⚡ रिफ्रेश फिक्स: प्रोडक्ट्स को बदल-बदल कर (रैंडम) दिखाने के लिए शफल एल्गोरिदम
     globalCachedProducts = mappedProducts.sort(() => Math.random() - 0.5);
-
     renderProducts(getAiSortedProducts(globalCachedProducts)); 
 } 
 
@@ -98,7 +96,6 @@ function showHomepage() {
     renderProducts(getAiSortedProducts(getProducts())); 
 } 
 
-// ⚡ थीम फिक्स: डार्क मोड थीम बटन को पूरी तरह फंक्शनल किया
 function toggleDarkMode() { 
     document.documentElement.classList.toggle('dark');
     if(document.documentElement.classList.contains('dark')) {
@@ -174,7 +171,6 @@ function renderProducts(list) {
     }); 
 } 
 
-// ⚡ सजेशन फिक्स: सजेशन पर क्लिक करते ही पेज तुरंत टॉप पर स्क्रॉल होगा
 function openProduct(id) { 
     const p = getProducts().find(prod => prod.id == id); 
     if(!p) return; 
@@ -298,7 +294,6 @@ function openProduct(id) {
         openStepCheckout(); 
     }; 
 
-    // ⚡ इंसटेंट स्क्रॉल फिक्स टाइमआउट ताकि नया सजेशन प्रोडक्ट खुलते ही स्क्रीन टॉप पर आ जाए
     setTimeout(() => {
         window.scrollTo({ top: 0, behavior: 'instant' });
     }, 60);
@@ -323,21 +318,35 @@ function closeSizeChartModal() {
     document.getElementById('size-chart-modal').classList.add('hidden'); 
 } 
 
-// Firebase Auth Observer (लॉगिन स्थिति ट्रैक करने के लिए)
+// ⚡ अपडेटेड ऑटो-ऑब्जर्वर: लॉगिन होने पर सीधे स्क्रीन पर नहीं खुलेगा, सिर्फ नवबार अपडेट करेगा
 function setupAuthObserver() {
-    firebase.auth().onAuthStateChanged((user) => {
+    firebase.auth().onAuthStateChanged(async (user) => {
         const accountSec = document.getElementById('account-section');
         const emailDisp = document.getElementById('user-email-display');
         const navAuthBtn = document.getElementById('user-auth-nav-btn');
+        const usernameDisp = document.getElementById('user-username-display');
+        const usernameBox = document.getElementById('username-setup-box');
         
         if (user) {
             currentUser = user.email;
-            if(accountSec) accountSec.classList.remove('hidden');
             if(emailDisp) emailDisp.innerText = `Logged in: ${user.email}`;
             if(navAuthBtn) {
                 navAuthBtn.innerHTML = `<i class="fa-solid fa-circle-user text-sm"></i> <span>DASHBOARD</span>`;
-                navAuthBtn.onclick = () => showProfileDashboard();
+                navAuthBtn.onclick = () => {
+                    if(accountSec) accountSec.classList.toggle('hidden'); 
+                };
             }
+
+            let savedUsername = localStorage.getItem(`username_${user.uid}`);
+            if (savedUsername) {
+                if(usernameDisp) usernameDisp.innerText = `@${savedUsername}`;
+                if(usernameBox) usernameBox.classList.add('hidden');
+            } else {
+                if(usernameDisp) usernameDisp.innerText = "Not Claimed";
+                if(usernameBox) usernameBox.classList.remove('hidden'); 
+            }
+            
+            loadCustomerOrders(user.uid);
         } else {
             currentUser = null;
             if(accountSec) accountSec.classList.add('hidden');
@@ -373,7 +382,6 @@ function openAuthModal() {
                 </div>
             </div>
 
-            <!-- ⚡ गूगल लॉगिन बटन इनेबल्ड -->
             <div class="mt-4 border-t pt-4 dark:border-zinc-800">
                 <button type="button" onclick="loginWithGoogle()" class="w-full flex items-center justify-center gap-2.5 bg-white border border-gray-300 text-black font-black py-2 uppercase text-[10px] tracking-widest rounded-xs hover:bg-gray-50 transition shadow-xs">
                     <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-4 h-4" alt="Google">
@@ -384,7 +392,6 @@ function openAuthModal() {
     `; 
 } 
 
-// ⚡ गूगल वन-क्लिक लॉगिन फंक्शन लॉजिक
 async function loginWithGoogle() {
     const provider = new firebase.auth.GoogleAuthProvider();
     try {
@@ -396,6 +403,22 @@ async function loginWithGoogle() {
         console.error("Google Auth Error:", error);
         alert("गूगल लॉगिन फेल हुआ: " + error.message);
     }
+}
+
+// ⚡ यूनिक यूजरनेम सेव करने का फंक्शन
+async function saveUniqueUsername() {
+    const input = document.getElementById('custom-username-input');
+    if(!input || !input.value.trim()) return alert("Please enter a valid username!");
+    
+    let desiredName = input.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+    if(desiredName.length < 3) return alert("Username must be at least 3 characters long!");
+
+    const user = firebase.auth().currentUser;
+    if(!user) return alert("No active session found.");
+
+    localStorage.setItem(`username_${user.uid}`, desiredName);
+    alert(`🎉 @${desiredName} successfully linked to your profile!`);
+    window.location.reload();
 }
 
 function handleEmailAuth(type) { 
@@ -420,8 +443,8 @@ function handleEmailAuth(type) {
 function executeProfileLogout() { 
     firebase.auth().signOut().then(() => {
         currentUser = null;
-        showHomepage();
-        alert("Logged out safely.");
+        localStorage.removeItem('velvora_current_user');
+        window.location.reload();
     });
 } 
 
@@ -587,4 +610,9 @@ function checkoutFromCart() {
 function updateCart() { 
     const count = cart.length; 
     if(document.getElementById('cart-count')) document.getElementById('cart-count').innerText = count; 
+}
+
+async function loadCustomerOrders(userId) {
+    const ordersList = document.getElementById('orders-list');
+    if(!ordersList) return;
 }
