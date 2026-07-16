@@ -80,11 +80,33 @@
     </div>
 
     <div id="homepage-view" class="space-y-6 pb-24">
-        <section class="relative h-[25vh] bg-black flex items-center justify-center overflow-hidden">
-            <div class="absolute inset-0 opacity-40 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1200');"></div>
-            <div class="text-center text-white relative z-10 space-y-1">
-                <p class="text-[9px] tracking-[0.3em] uppercase font-bold text-gray-400">Luxury Premium Hub</p>
-                <h1 class="text-2xl md:text-3xl font-light tracking-widest uppercase">THE LUXE CAPSULE DROPS</h1>
+        <!-- 🎡 ऑटो-स्लाइडिंग लक्ज़री बैनर स्लाइडर -->
+        <section class="relative h-[35vh] md:h-[45vh] bg-black overflow-hidden border-b border-gray-950">
+            <div id="slider-container" class="absolute inset-0 w-full h-full flex transition-transform duration-700 ease-in-out">
+                <div class="w-full h-full flex-shrink-0 bg-cover bg-center relative" style="background-image: url('https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1200');">
+                    <div class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white p-4">
+                        <span class="text-[9px] tracking-[0.3em] uppercase font-bold text-red-500">Velvora Aesthetics</span>
+                        <h1 class="text-2xl md:text-4xl font-light tracking-widest uppercase mt-1">THE KINETIC DROPS</h1>
+                    </div>
+                </div>
+                <div class="w-full h-full flex-shrink-0 bg-cover bg-center relative" style="background-image: url('https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?q=80&w=1200');">
+                    <div class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white p-4">
+                        <span class="text-[9px] tracking-[0.3em] uppercase font-bold text-yellow-500">Luxury Heavy Shield</span>
+                        <h1 class="text-2xl md:text-4xl font-light tracking-widest uppercase mt-1">WINTER CAPSULE VOL.1</h1>
+                    </div>
+                </div>
+                <div class="w-full h-full flex-shrink-0 bg-cover bg-center relative" style="background-image: url('https://images.unsplash.com/photo-1542272604-787c3835535d?q=80&w=1200');">
+                    <div class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white p-4">
+                        <span class="text-[9px] tracking-[0.3em] uppercase font-bold text-gray-300">Premium Straight Cut</span>
+                        <h1 class="text-2xl md:text-4xl font-light tracking-widest uppercase mt-1">DENIM LABELS REBOOT</h1>
+                    </div>
+                </div>
+                <div class="w-full h-full flex-shrink-0 bg-cover bg-center relative" style="background-image: url('https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=1200');">
+                    <div class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white p-4">
+                        <span class="text-[9px] tracking-[0.3em] uppercase font-bold text-blue-400">Next Gen Architecture</span>
+                        <h1 class="text-2xl md:text-4xl font-light tracking-widest uppercase mt-1">ELECTRONICS INTEGRATION</h1>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -133,38 +155,39 @@
             </aside>
 
             <main class="md:col-span-9">
-                <!-- 👤 कस्टमर माय अकाउंट डैशबोर्ड सेक्शन (✕ बटन + यूनिक यूजरनेम फ़ील्ड्स के साथ फिक्स्ड) -->
-                <div id="account-section" class="hidden w-full mb-6 p-5 bg-white border border-gray-200 rounded-2xl dark:bg-[#121212] dark:border-gray-900 shadow-sm transition-all duration-300 relative">
-                    <button onclick="document.getElementById('account-section').classList.add('hidden')" class="absolute top-4 right-4 text-xs font-black bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 w-6 h-6 rounded-full flex items-center justify-center text-black dark:text-white transition">✕</button>
-                    
-                    <div class="border-b pb-3 mb-4 dark:border-gray-800 flex justify-between items-center pr-8">
-                        <div>
-                            <span class="text-[9px] font-black uppercase text-red-500 tracking-widest">Active Verified Profile</span>
-                            <h2 class="text-xs font-black tracking-widest uppercase text-gray-900 dark:text-white mt-0.5 flex items-center gap-1.5">
-                                <span>ID:</span> <span id="user-username-display" class="text-black dark:text-yellow-500 font-black">Loading...</span>
-                            </h2>
-                            <p class="text-[10px] text-gray-500 font-bold" id="user-email-display">Loading session...</p>
-                        </div>
-                        <button onclick="logoutUser()" class="bg-red-600 text-white font-black text-[9px] tracking-widest uppercase px-3 py-1.5 rounded-md hover:bg-red-700 transition">Logout</button>
-                    </div>
-
-                    <!-- 🏷️ यूजरनेम क्लेम करने का बॉक्स -->
-                    <div id="username-setup-box" class="hidden mb-4 p-3 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900/50 rounded-xl">
-                        <p class="text-[10px] text-yellow-800 dark:text-yellow-400 font-bold mb-1.5">Claim Your Unique Velvora Username:</p>
-                        <div class="flex gap-2">
-                            <input type="text" id="custom-username-input" placeholder="e.g., yashi_luxe" class="p-1.5 text-[10px] border rounded bg-white text-black font-bold focus:outline-none max-w-xs dark:bg-zinc-900 dark:border-zinc-800 dark:text-white">
-                            <button onclick="saveUniqueUsername()" class="bg-black text-white dark:bg-white dark:text-black font-black text-[9px] px-3 rounded uppercase tracking-wider">Claim ID</button>
-                        </div>
-                    </div>
-
-                    <div>
-                        <h3 class="text-[10px] font-black tracking-widest uppercase text-gray-400 mb-2 flex items-center gap-1.5"><i class="fa-solid fa-box-open"></i> Order Tracking History</h3>
-                        <div id="orders-list" class="space-y-2 text-[11px] text-gray-500 font-medium">No active or historic orders detected.</div>
-                    </div>
-                </div>
-
                 <div id="products-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
             </main>
+        </div>
+    </div>
+
+    <!-- 👤 कस्टमर माय अकाउंट डैशबोर्ड (फुल-स्क्रीन रिस्पॉन्सिव मॉडल पॉपअप) -->
+    <div id="account-section" class="hidden fixed inset-0 bg-black/75 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+        <div class="bg-white max-w-md w-full p-6 rounded-2xl relative dark:bg-[#121212] border dark:border-gray-900 shadow-2xl animate-3d-wave">
+            <button onclick="document.getElementById('account-section').classList.add('hidden')" class="absolute top-4 right-4 text-xs font-black bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 w-6 h-6 rounded-full flex items-center justify-center text-black dark:text-white transition">✕</button>
+            
+            <div class="border-b pb-3 mb-4 dark:border-gray-800 flex justify-between items-center pr-6">
+                <div>
+                    <span class="text-[9px] font-black uppercase text-red-500 tracking-widest">Active Verified Profile</span>
+                    <h2 class="text-xs font-black tracking-widest uppercase text-gray-900 dark:text-white mt-0.5 flex items-center gap-1.5">
+                        <span>ID:</span> <span id="user-username-display" class="text-black dark:text-yellow-500 font-black">Loading...</span>
+                    </h2>
+                    <p class="text-[10px] text-gray-500 font-bold break-all" id="user-email-display">Loading session...</p>
+                </div>
+                <button onclick="logoutUser()" class="bg-red-600 text-white font-black text-[9px] tracking-widest uppercase px-3 py-1.5 rounded-md hover:bg-red-700 transition">Logout</button>
+            </div>
+
+            <div id="username-setup-box" class="hidden mb-4 p-3 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900/50 rounded-xl">
+                <p class="text-[10px] text-yellow-800 dark:text-yellow-400 font-bold mb-1.5">Claim Your Unique Velvora Username:</p>
+                <div class="flex gap-2">
+                    <input type="text" id="custom-username-input" placeholder="e.g., yashi_luxe" class="p-1.5 text-[10px] border rounded bg-white text-black font-bold focus:outline-none w-full dark:bg-zinc-900 dark:border-zinc-800 dark:text-white">
+                    <button onclick="saveUniqueUsername()" class="bg-black text-white dark:bg-white dark:text-black font-black text-[9px] px-3 rounded uppercase tracking-wider whitespace-nowrap">Claim ID</button>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-[10px] font-black tracking-widest uppercase text-gray-400 mb-2 flex items-center gap-1.5"><i class="fa-solid fa-box-open"></i> Order Tracking History</h3>
+                <div id="orders-list" class="space-y-2 text-[11px] text-gray-500 font-medium max-h-48 overflow-y-auto">No active orders detected.</div>
+            </div>
         </div>
     </div>
 
@@ -240,7 +263,6 @@
                 <button onclick="handleEmailAuth()" class="w-full bg-black text-white font-black py-2 uppercase text-[10px] tracking-widest rounded-xs hover:opacity-90 transition">Confirm Identity</button>
             </div>
 
-            <!-- ⚡ गूगल लॉगिन बटन -->
             <div class="mt-4 border-t pt-4 dark:border-zinc-800">
                 <button type="button" onclick="loginWithGoogle()" class="w-full flex items-center justify-center gap-2.5 bg-white border border-gray-300 text-black font-black py-2 uppercase text-[10px] tracking-widest rounded-xs hover:bg-gray-50 transition shadow-xs">
                     <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-4 h-4" alt="Google">
