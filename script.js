@@ -630,5 +630,9 @@ function logoutUser() {
         window.location.reload();
     });
 }
+  // पुराना कोड जहाँ ख़त्म हो रहा है, उसके ठीक नीचे इसे पेस्ट करो:
+setTimeout(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+}, 100);
 
 // 💡 निर्देश: जहाँ भी आपकी script.js में सजेशन प्रोडक्ट्स पर क्लिक करने का `onclick` फंक्शन (जैसे viewProduct details) बना हुआ है, उस फंक्शन के अंदर सबसे पहली लाइन में `fixSuggestionScroll();` को कॉल कर दें।
