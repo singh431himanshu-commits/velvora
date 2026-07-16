@@ -32,13 +32,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     initSearchEngine();
     updateUserNavUi();
     await fetchLiveProducts(); // Supabase से डेटा लोड करें
-    
-    // Recaptcha Verifier को बैकग्राउंड में तैयार करें
-    if (document.getElementById('recaptcha-container')) {
-        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-            'size': 'invisible'
-        });
-    }
 });
 
 // Supabase से लाइव प्रोडक्ट्स डाउनलोड करने का फ़ंक्शन
@@ -316,7 +309,7 @@ function updateUserNavUi() {
     }
 }
 
-// 2. नया ओटीपी आधारित लॉगिन फॉर्म (Design)
+// 2. नया ईमेल-पासवर्ड और गूगल लॉगिन फॉर्म (Design)
 function openAuthModal() {
     const modal = document.getElementById('checkout-modal');
     modal.classList.remove('hidden');
@@ -325,84 +318,86 @@ function openAuthModal() {
             <button onclick="closeCheckoutModal()" class="absolute top-4 right-4 text-sm">✕</button>
             <h3 class="text-sm font-black uppercase border-b pb-2 tracking-wider text-black dark:text-white">👤 CUSTOMER AUTH GATEWAY</h3>
             
-            <!-- स्टेप 1: मोबाइल नंबर डालना -->
-            <div id="phone-input-section" class="space-y-4">
+            <div class="space-y-3">
                 <div>
-                    <label class="block mb-1 text-gray-400 uppercase text-[9px]">Enter Phone Number (10 Digits)</label>
-                    <div class="flex gap-2">
-                        <span class="p-2.5 bg-gray-100 dark:bg-gray-800 rounded border dark:border-gray-700 flex items-center">+91</span>
-                        <input type="tel" id="auth-phone-input" placeholder="e.g., 9876543210" class="w-full p-2.5 border rounded dark:bg-gray-800 dark:border-gray-700 focus:outline-none">
-                    </div>
+                    <label class="block mb-1 text-gray-400 uppercase text-[9px]">Email Address</label>
+                    <input type="email" id="auth-email-input" placeholder="your@email.com" class="w-full p-2.5 border rounded dark:bg-gray-800 dark:border-gray-700 focus:outline-none">
                 </div>
-                <button onclick="handlePhoneAuthSubmit()" id="send-otp-btn" class="w-full bg-black text-white py-2.5 uppercase rounded text-[10px] tracking-widest font-black dark:bg-white dark:text-black live-waving-btn">Send OTP 🚀</button>
-            </div>
+                <div>
+                    <label class="block mb-1 text-gray-400 uppercase text-[9px]">Password</label>
+                    <input type="password" id="auth-password-input" placeholder="••••••••" class="w-full p-2.5 border rounded dark:bg-gray-800 dark:border-gray-700 focus:outline-none">
+                </div>
+                
+                <div class="flex gap-2 pt-1">
+                    <button onclick="handleEmailAuth('signin')" class="w-1/2 bg-black text-white py-2.5 uppercase rounded text-[9px] tracking-wider font-black dark:bg-white dark:text-black">Sign In</button>
+                    <button onclick="handleEmailAuth('signup')" class="w-1/2 bg-gray-200 text-black py-2.5 uppercase rounded text-[9px] tracking-wider font-black dark:bg-gray-700 dark:text-white">Sign Up</button>
+                </div>
 
-            <!-- स्टेप 2: OTP भरना (शुरू में छुपा रहेगा) -->
-            <div id="otp-input-section" class="space-y-4 hidden">
-                <div>
-                    <label class="block mb-1 text-gray-400 uppercase text-[9px]">Enter OTP Code</label>
-                    <input type="text" id="auth-otp-input" placeholder="6-Digit OTP" class="w-full p-2.5 border rounded dark:bg-gray-800 dark:border-gray-700 focus:outline-none text-center tracking-widest text-lg">
+                <div class="relative flex py-2 items-center">
+                    <div class="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+                    <span class="flex-shrink mx-4 text-gray-400 text-[9px] uppercase">OR</span>
+                    <div class="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
                 </div>
-                <button onclick="handleOtpVerificationSubmit()" class="w-full bg-emerald-600 text-white py-2.5 uppercase rounded text-[10px] tracking-widest font-black">Verify OTP & Login 🏆</button>
+
+                <button onclick="handleGoogleAuth()" class="w-full bg-red-600 text-white py-2.5 uppercase rounded text-[10px] tracking-widest font-black flex items-center justify-center gap-2 shadow-md">
+                    <i class="fa-brands fa-google"></i> Continue with Google
+                </button>
             </div>
         </div>
     `;
 }
 
-// 3. OTP भेजने का फंक्शन
-function handlePhoneAuthSubmit() {
-    const phone = document.getElementById('auth-phone-input').value.trim();
-    if (phone.length !== 10 || isNaN(phone)) {
-        return alert("🚨 कृपया एक मान्य 10 अंकों का मोबाइल नंबर डालें!");
+// 3. ईमेल और पासवर्ड से साइन-इन / साइन-अप करने का नया फंक्शन
+function handleEmailAuth(type) {
+    const email = document.getElementById('auth-email-input').value.trim();
+    const password = document.getElementById('auth-password-input').value.trim();
+
+    if (!email || !password) {
+        return alert("🚨 कृपया ईमेल और पासवर्ड दोनों दर्ज करें!");
     }
 
-    const fullPhoneNumber = "+91" + phone;
-    const appVerifier = window.recaptchaVerifier;
-
-    document.getElementById('send-otp-btn').innerText = "Sending OTP...";
-    document.getElementById('send-otp-btn').disabled = true;
-
-    firebase.auth().signInWithPhoneNumber(fullPhoneNumber, appVerifier)
-        .then((confirmationResult) => {
-            window.confirmationResult = confirmationResult;
-            alert("✅ OTP सफलतापूर्वक आपके मोबाइल पर भेज दिया गया है!");
-            
-            // फ़ोन इनपुट को छिपाकर OTP बॉक्स दिखाएं
-            document.getElementById('phone-input-section').classList.add('hidden');
-            document.getElementById('otp-input-section').classList.remove('hidden');
-        }).catch((error) => {
-            alert("❌ समस्या आई: " + error.message);
-            document.getElementById('send-otp-btn').innerText = "Send OTP 🚀";
-            document.getElementById('send-otp-btn').disabled = false;
-            // एरर आने पर recaptcha रीसेट करना आवश्यक है
-            window.recaptchaVerifier.render().then(function(widgetId) {
-                grecaptcha.reset(widgetId);
+    if (type === 'signup') {
+        firebase.auth().createUserWithEmailAndPassword(email, password)
+            .then((result) => {
+                successLogin(result.user.email);
+            })
+            .catch((error) => {
+                alert("❌ साइन-अप में समस्या: " + error.message);
             });
+    } else {
+        firebase.auth().signInWithEmailAndPassword(email, password)
+            .then((result) => {
+                successLogin(result.user.email);
+            })
+            .catch((error) => {
+                alert("❌ लॉगिन में समस्या: " + error.message);
+            });
+    }
+}
+
+// 4. गूगल से साइन-इन करने का नया फंक्शन
+function handleGoogleAuth() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    firebase.auth().signInWithPopup(provider)
+        .then((result) => {
+            successLogin(result.user.email);
+        })
+        .catch((error) => {
+            alert("❌ Google लॉगिन असफल: " + error.message);
         });
 }
 
-// 4. OTP वेरीफाई करने का फंक्शन
-function handleOtpVerificationSubmit() {
-    const code = document.getElementById('auth-otp-input').value.trim();
-    if (code.length !== 6 || isNaN(code)) {
-        return alert("🚨 कृपया सही 6-अंकीय OTP कोड भरें!");
-    }
+// लॉगिन सफल होने का कॉमन लॉजिक
+function successLogin(userIdentifier) {
+    currentUser = userIdentifier;
+    localStorage.setItem('velvora_current_user', JSON.stringify(currentUser));
+    
+    let orderLog = JSON.parse(localStorage.getItem(`orders_${currentUser}`)) || [];
+    localStorage.setItem(`orders_${currentUser}`, JSON.stringify(orderLog));
 
-    window.confirmationResult.confirm(code)
-        .then((result) => {
-            // लॉगिन सफल! यूजर डेटा लोकल स्टोरेज में सेव करें
-            currentUser = result.user.phoneNumber;
-            localStorage.setItem('velvora_current_user', JSON.stringify(currentUser));
-            
-            let orderLog = JSON.parse(localStorage.getItem(`orders_${currentUser}`)) || [];
-            localStorage.setItem(`orders_${currentUser}`, JSON.stringify(orderLog));
-
-            closeCheckoutModal();
-            updateUserNavUi();
-            alert(`🎉 लॉगिन सफल! स्वागत है वेल्वोरा स्टोर पर!`);
-        }).catch((error) => {
-            alert("❌ गलत OTP! कृपया सही कोड दर्ज करें या पुनः प्रयास करें।");
-        });
+    closeCheckoutModal();
+    updateUserNavUi();
+    alert(`🎉 लॉगिन सफल! स्वागत है वेल्वोरा स्टोर पर!`);
 }
 
 function executeProfileLogout() {
@@ -580,4 +575,3 @@ function updateCart() {
     const count = cart.length;
     if(document.getElementById('cart-count')) document.getElementById('cart-count').innerText = count;
 }
- 
