@@ -9,7 +9,6 @@ const firebaseConfig = {
   measurementId: "G-P0F5B0EFT1" 
 }; 
 
-// Firebase को सुरक्षित रूप से चालू करें
 if (!firebase.apps.length) { 
   firebase.initializeApp(firebaseConfig); 
 } 
@@ -23,30 +22,27 @@ let wishlist = JSON.parse(localStorage.getItem('velvora_wishlist')) || [];
 let selectedSize = null; 
 let selectedColor = null; 
 let currentProductPhotos = []; 
-let globalCachedProducts = []; // क्लाउड डेटा रखने के लिए ग्लोबल वेरिएबल
+let globalCachedProducts = []; 
+let currentUser = null; 
 
-let currentUser = JSON.parse(localStorage.getItem('velvora_current_user')) || null; 
-
-// DOMContentLoaded इवेंट - बैक बटन 404 फिक्स के साथ अपडेटेड
+// DOMContentLoaded इवेंट
 window.addEventListener('DOMContentLoaded', async () => { 
     switchTab('desc'); 
     initSearchEngine(); 
-    updateUserNavUi(); 
-    await fetchLiveProducts(); // Supabase से डेटा लोड करें
+    setupAuthObserver(); 
+    await fetchLiveProducts(); 
     
-    // वर्तमान URL पाथ के आधार पर इतिहास में स्टेट लॉक करें ताकि बैक करने पर 404 न आए
     if (!history.state || history.state.page !== 'home') {
         history.replaceState({ page: 'home' }, '', window.location.pathname);
     }
 }); 
 
-// जब यूजर ब्राउज़र का बैक (Back) बटन दबाए, तो उसे 404 पर भेजने के बजाय सीधे होमपेज व्यू दिखाएं
 window.addEventListener('popstate', (event) => {
     showHomepage();
     history.pushState({ page: 'home' }, '', window.location.pathname);
 });
 
-// Supabase से लाइव प्रोडक्ट्स डाउनलोड करने का फ़ंक्शन
+// Supabase से लाइव प्रोडक्ट्स डाउनलोड करने और शफल (रैंडम) करने का फ़ंक्शन
 async function fetchLiveProducts() { 
     const grid = document.getElementById('products-grid'); 
     if(grid) grid.innerHTML = `<div class="col-span-4 text-center text-gray-400 py-12 font-bold text-xs">Loading live vault collection...</div>`; 
@@ -58,7 +54,7 @@ async function fetchLiveProducts() {
         return; 
     } 
 
-    globalCachedProducts = products.map(p => { 
+    let mappedProducts = products.map(p => { 
         let imgArray = []; 
         if (p.images) { 
             try { 
@@ -83,6 +79,9 @@ async function fetchLiveProducts() {
         }; 
     }); 
 
+    // ⚡ रिफ्रेश फिक्स: प्रोडक्ट्स को बदल-बदल कर (रैंडम) दिखाने के लिए शफल एल्गोरिदम
+    globalCachedProducts = mappedProducts.sort(() => Math.random() - 0.5);
+
     renderProducts(getAiSortedProducts(globalCachedProducts)); 
 } 
 
@@ -99,7 +98,16 @@ function showHomepage() {
     renderProducts(getAiSortedProducts(getProducts())); 
 } 
 
-function toggleDarkMode() { document.documentElement.classList.toggle('dark'); } 
+// ⚡ थीम फिक्स: डार्क मोड थीम बटन को पूरी तरह फंक्शनल किया
+function toggleDarkMode() { 
+    document.documentElement.classList.toggle('dark');
+    if(document.documentElement.classList.contains('dark')) {
+        localStorage.setItem('velvora_theme', 'dark');
+    } else {
+        localStorage.setItem('velvora_theme', 'light');
+    }
+} 
+
 function toggleCart() { document.getElementById('cart-sidebar').classList.toggle('translate-x-full'); } 
 function closeCheckoutModal() { document.getElementById('checkout-modal').classList.add('hidden'); } 
 
@@ -128,7 +136,7 @@ function initSearchEngine() {
         const query = e.target.value.toLowerCase().trim(); 
         let allItems = getProducts(); 
         if (query !== '') { 
-            allItems = allItems.filter(p =>  
+            allItems = allItems.filter(p => 
                 p.name.toLowerCase().includes(query) ||  
                 p.brand.toLowerCase().includes(query) ||  
                 p.category.toLowerCase().includes(query) 
@@ -166,6 +174,7 @@ function renderProducts(list) {
     }); 
 } 
 
+// ⚡ सजेशन फिक्स: सजेशन पर क्लिक करते ही पेज तुरंत टॉप पर स्क्रॉल होगा
 function openProduct(id) { 
     const p = getProducts().find(prod => prod.id == id); 
     if(!p) return; 
@@ -288,6 +297,11 @@ function openProduct(id) {
         window.checkoutItemDetails = `Brand: [${p.brand}] \nProduct: ${p.name}\nSize: ${selectedSize}\nColor: ${selectedColor}\nPrice Summary: ₹${priceVal}`; 
         openStepCheckout(); 
     }; 
+
+    // ⚡ इंसटेंट स्क्रॉल फिक्स टाइमआउट ताकि नया सजेशन प्रोडक्ट खुलते ही स्क्रीन टॉप पर आ जाए
+    setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+    }, 60);
 } 
 
 function switchTab(tabName) { 
@@ -309,19 +323,32 @@ function closeSizeChartModal() {
     document.getElementById('size-chart-modal').classList.add('hidden'); 
 } 
 
-function updateUserNavUi() { 
-    const authBtn = document.getElementById('user-auth-nav-btn'); 
-    if (!authBtn) return; 
-    if (currentUser) { 
-        authBtn.innerHTML = `<i class="fa-solid fa-circle-user text-sm animate-pulse"></i> <span>${currentUser.substring(0, 10)}...</span>`; 
-        authBtn.onclick = () => showProfileDashboard(); 
-    } else { 
-        authBtn.innerHTML = `<i class="fa-solid fa-lock text-xs"></i> <span>Login</span>`; 
-        authBtn.onclick = () => openAuthModal(); 
-    } 
-} 
+// Firebase Auth Observer (लॉगिन स्थिति ट्रैक करने के लिए)
+function setupAuthObserver() {
+    firebase.auth().onAuthStateChanged((user) => {
+        const accountSec = document.getElementById('account-section');
+        const emailDisp = document.getElementById('user-email-display');
+        const navAuthBtn = document.getElementById('user-auth-nav-btn');
+        
+        if (user) {
+            currentUser = user.email;
+            if(accountSec) accountSec.classList.remove('hidden');
+            if(emailDisp) emailDisp.innerText = `Logged in: ${user.email}`;
+            if(navAuthBtn) {
+                navAuthBtn.innerHTML = `<i class="fa-solid fa-circle-user text-sm"></i> <span>DASHBOARD</span>`;
+                navAuthBtn.onclick = () => showProfileDashboard();
+            }
+        } else {
+            currentUser = null;
+            if(accountSec) accountSec.classList.add('hidden');
+            if(navAuthBtn) {
+                navAuthBtn.innerHTML = `<i class="fa-solid fa-lock text-xs"></i> <span>Login</span>`;
+                navAuthBtn.onclick = () => openAuthModal();
+            }
+        }
+    });
+}
 
-// 2. नया ईमेल-पासवर्ड लॉगिन फॉर्म (Google Button Removed)
 function openAuthModal() { 
     const modal = document.getElementById('checkout-modal'); 
     modal.classList.remove('hidden'); 
@@ -345,11 +372,32 @@ function openAuthModal() {
                     <button onclick="handleEmailAuth('signup')" class="w-1/2 bg-gray-200 text-black py-2.5 uppercase rounded text-[9px] tracking-wider font-black dark:bg-gray-700 dark:text-white">Sign Up</button>
                 </div>
             </div>
+
+            <!-- ⚡ गूगल लॉगिन बटन इनेबल्ड -->
+            <div class="mt-4 border-t pt-4 dark:border-zinc-800">
+                <button type="button" onclick="loginWithGoogle()" class="w-full flex items-center justify-center gap-2.5 bg-white border border-gray-300 text-black font-black py-2 uppercase text-[10px] tracking-widest rounded-xs hover:bg-gray-50 transition shadow-xs">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-4 h-4" alt="Google">
+                    <span>Continue with Google</span>
+                </button>
+            </div>
         </div>
     `; 
 } 
 
-// 3. ईमेल और पासवर्ड से साइन-इन / साइन-अप करने का फंक्शन
+// ⚡ गूगल वन-क्लिक लॉगिन फंक्शन लॉजिक
+async function loginWithGoogle() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    try {
+        const result = await firebase.auth().signInWithPopup(provider);
+        alert(`🎉 स्वागत है ${result.user.displayName || 'यूजर'}!`);
+        closeCheckoutModal();
+        window.location.reload();
+    } catch (error) {
+        console.error("Google Auth Error:", error);
+        alert("गूगल लॉगिन फेल हुआ: " + error.message);
+    }
+}
+
 function handleEmailAuth(type) { 
     const email = document.getElementById('auth-email-input').value.trim(); 
     const password = document.getElementById('auth-password-input').value.trim(); 
@@ -360,42 +408,21 @@ function handleEmailAuth(type) {
 
     if (type === 'signup') { 
         firebase.auth().createUserWithEmailAndPassword(email, password) 
-            .then((result) => { 
-                successLogin(result.user.email); 
-            }) 
-            .catch((error) => { 
-                alert("❌ साइन-अप में समस्या: " + error.message); 
-            }); 
+            .then((result) => { closeCheckoutModal(); }) 
+            .catch((error) => { alert("❌ साइन-अप में समस्या: " + error.message); }); 
     } else { 
         firebase.auth().signInWithEmailAndPassword(email, password) 
-            .then((result) => { 
-                successLogin(result.user.email); 
-            }) 
-            .catch((error) => { 
-                alert("❌ लॉगिन में समस्या: " + error.message); 
-            }); 
+            .then((result) => { closeCheckoutModal(); }) 
+            .catch((error) => { alert("❌ लॉगिन में समस्या: " + error.message); }); 
     } 
 } 
 
-// लॉगिन सफल होने का कॉमन लॉजिक
-function successLogin(userIdentifier) { 
-    currentUser = userIdentifier; 
-    localStorage.setItem('velvora_current_user', JSON.stringify(currentUser)); 
-     
-    let orderLog = JSON.parse(localStorage.getItem(`orders_${currentUser}`)) || []; 
-    localStorage.setItem(`orders_${currentUser}`, JSON.stringify(orderLog)); 
-
-    closeCheckoutModal(); 
-    updateUserNavUi(); 
-    alert(`🎉 लॉगिन सफल! स्वागत है वेल्वोरा स्टोर पर!`); 
-} 
-
 function executeProfileLogout() { 
-    currentUser = null; 
-    localStorage.removeItem('velvora_current_user'); 
-    showHomepage(); 
-    updateUserNavUi(); 
-    alert("Logged out safely."); 
+    firebase.auth().signOut().then(() => {
+        currentUser = null;
+        showHomepage();
+        alert("Logged out safely.");
+    });
 } 
 
 function showProfileDashboard() { 
@@ -424,10 +451,6 @@ function showProfileDashboard() {
                 <div class="bg-white border p-4 rounded-xl dark:bg-[#121212] dark:border-gray-900 text-center shadow-3xs">
                     <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Cart Items Cache</p>
                     <h3 class="text-xl font-black mt-1 text-black dark:text-white">${cart.length}</h3>
-                </div>
-                <div class="bg-white border p-4 rounded-xl dark:bg-[#121212] dark:border-gray-900 text-center shadow-3xs">
-                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Wishlist Items</p>
-                    <h3 class="text-xl font-black mt-1 text-black dark:text-white">${wishlist.length}</h3>
                 </div>
             </div>
             <div class="bg-white border p-5 rounded-2xl dark:bg-[#121212] dark:border-gray-900 shadow-2xs">
@@ -462,7 +485,7 @@ function showProfileDashboard() {
 
 function openStepCheckout() { 
     if (!currentUser) { 
-        alert("🔒 SECURITY PROTOCOL: Please login / build your profile space layout first!"); 
+        alert("🔒 SECURITY PROTOCOL: Please login first!"); 
         openAuthModal(); 
         return; 
     } 
@@ -549,7 +572,7 @@ function finalizeStepOrder() {
 
 function checkoutFromCart() { 
     if (!currentUser) { 
-        alert("🔒 SECURITY PROTOCOL: Please login / build your profile space layout first!"); 
+        alert("🔒 SECURITY PROTOCOL: Please login first!"); 
         openAuthModal(); 
         return; 
     } 
@@ -565,74 +588,3 @@ function updateCart() {
     const count = cart.length; 
     if(document.getElementById('cart-count')) document.getElementById('cart-count').innerText = count; 
 }
-// ⚡ यूजर लॉगिन स्टेट चेक करने और डेटा दिखाने का फंक्शन
-firebase.auth().onAuthStateChanged((user) => {
-    const accountSec = document.getElementById('account-section');
-    if (user) {
-        accountSec.classList.remove('hidden');
-        document.getElementById('user-email-display').innerText = `Logged in as: ${user.email}`;
-        loadCustomerOrders(user.uid); // यूजर के ऑर्डर्स लोड करने के लिए
-    } else {
-        accountSec.classList.add('hidden');
-    } 
-        // ⚡ 1. स्क्रॉल फिक्स: जब भी सजेशन प्रोडक्ट या कोई नया प्रोडक्ट लोड हो, यह लाइन चलाएं
-function fixSuggestionScroll() {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-// ⚡ 2. गूगल वन-क्लिक लॉगिन फंक्शन
-async function loginWithGoogle() {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    try {
-        const result = await firebase.auth().signInWithPopup(provider);
-        const user = result.user;
-        alert(`🎉 वेलकम बैक ${user.displayName || 'यूजर'}!`);
-        
-        // मॉडल्स बंद और रिफ्रेश करने का कोड
-        const authModal = document.getElementById('auth-modal');
-        if(authModal) authModal.classList.add('hidden');
-        window.location.reload();
-    } catch (error) {
-        console.error("Google Auth Error:", error);
-        alert("गूगल लॉगिन फेल हुआ: " + error.message);
-    }
-}
-
-// ⚡ 3. यूजर की लॉगिन स्थिति जांचना और डैशबोर्ड दिखाना
-firebase.auth().onAuthStateChanged((user) => {
-    const accountSec = document.getElementById('account-section');
-    const emailDisp = document.getElementById('user-email-display');
-    const navAuthBtn = document.getElementById('user-auth-nav-btn');
-    
-    if (user) {
-        if(accountSec) accountSec.classList.remove('hidden');
-        if(emailDisp) emailDisp.innerText = `Logged in: ${user.email}`;
-        if(navAuthBtn) navAuthBtn.innerText = `👤 ${user.displayName || 'PROFILE'}`;
-        
-        // यहाँ से आर्डर हिस्ट्री लोड कर सकते हैं
-        loadCustomerOrders(user.uid);
-    } else {
-        if(accountSec) accountSec.classList.add('hidden');
-        if(navAuthBtn) navAuthBtn.innerText = "🔑 LOGIN";
-    }
-});
-
-// ⚡ 4. आर्डर हिस्ट्री लोड करने की लॉजिक (Supabase/Firebase के साथ)
-async function loadCustomerOrders(userId) {
-    const ordersList = document.getElementById('orders-list');
-    if(!ordersList) return;
-    // नोट: यहाँ आप अपने सुपाबेस या फायरस्टोर से ऑर्डर्स लाकर इनरएचटीएमएल अपडेट कर सकते हैं
-}
-
-// ⚡ 5. लॉगआउट एक्शन
-function logoutUser() {
-    firebase.auth().signOut().then(() => {
-        window.location.reload();
-    });
-}
-  // पुराना कोड जहाँ ख़त्म हो रहा है, उसके ठीक नीचे इसे पेस्ट करो:
-setTimeout(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' });
-}, 100);
-
-// 💡 निर्देश: जहाँ भी आपकी script.js में सजेशन प्रोडक्ट्स पर क्लिक करने का `onclick` फंक्शन (जैसे viewProduct details) बना हुआ है, उस फंक्शन के अंदर सबसे पहली लाइन में `fixSuggestionScroll();` को कॉल कर दें।
