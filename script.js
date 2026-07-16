@@ -565,3 +565,30 @@ function updateCart() {
     const count = cart.length; 
     if(document.getElementById('cart-count')) document.getElementById('cart-count').innerText = count; 
 }
+// ⚡ यूजर लॉगिन स्टेट चेक करने और डेटा दिखाने का फंक्शन
+firebase.auth().onAuthStateChanged((user) => {
+    const accountSec = document.getElementById('account-section');
+    if (user) {
+        accountSec.classList.remove('hidden');
+        document.getElementById('user-email-display').innerText = `Logged in as: ${user.email}`;
+        loadCustomerOrders(user.uid); // यूजर के ऑर्डर्स लोड करने के लिए
+    } else {
+        accountSec.classList.add('hidden');
+    }
+});
+
+// 📦 Supabase या Firebase से कस्टमर के ऑर्डर्स लाने का फंक्शन
+async function loadCustomerOrders(userId) {
+    const ordersList = document.getElementById('orders-list');
+    // यहाँ अपने डेटाबेस से ऑर्डर्स फेच करने का कोड डालें
+    // उदाहरण के लिए: 
+    // const { data: orders } = await supabase.from('orders').select('*').eq('user_id', userId);
+}
+
+// 🚪 लॉगआउट फंक्शन
+function logoutUser() {
+    firebase.auth().signOut().then(() => {
+        alert("Logged out successfully!");
+        window.location.reload();
+    });
+}
