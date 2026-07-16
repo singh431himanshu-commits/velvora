@@ -153,13 +153,13 @@
         window.addEventListener('DOMContentLoaded', () => { 
             renderCatalogTable(); 
             
-            // 404 Error प्रिवेंशन हिस्ट्री लॉक
+            // इतिहास में स्टेट सेट करें
             if (!history.state || history.state.page !== 'admin') {
                 history.replaceState({ page: 'admin' }, '', window.location.pathname);
             }
         });
 
-        // बैक बटन दबाने पर 404 रोकने और velvora.html पर री-डायरेक्ट करने का लॉजिक
+        // बैक बटन एरर 404 फिक्स का पुख्ता इलाज
         window.addEventListener('popstate', (event) => {
             window.location.href = "velvora.html";
         });
