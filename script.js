@@ -574,21 +574,61 @@ firebase.auth().onAuthStateChanged((user) => {
         loadCustomerOrders(user.uid); // यूजर के ऑर्डर्स लोड करने के लिए
     } else {
         accountSec.classList.add('hidden');
+    } 
+        // ⚡ 1. स्क्रॉल फिक्स: जब भी सजेशन प्रोडक्ट या कोई नया प्रोडक्ट लोड हो, यह लाइन चलाएं
+function fixSuggestionScroll() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ⚡ 2. गूगल वन-क्लिक लॉगिन फंक्शन
+async function loginWithGoogle() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    try {
+        const result = await firebase.auth().signInWithPopup(provider);
+        const user = result.user;
+        alert(`🎉 वेलकम बैक ${user.displayName || 'यूजर'}!`);
+        
+        // मॉडल्स बंद और रिफ्रेश करने का कोड
+        const authModal = document.getElementById('auth-modal');
+        if(authModal) authModal.classList.add('hidden');
+        window.location.reload();
+    } catch (error) {
+        console.error("Google Auth Error:", error);
+        alert("गूगल लॉगिन फेल हुआ: " + error.message);
+    }
+}
+
+// ⚡ 3. यूजर की लॉगिन स्थिति जांचना और डैशबोर्ड दिखाना
+firebase.auth().onAuthStateChanged((user) => {
+    const accountSec = document.getElementById('account-section');
+    const emailDisp = document.getElementById('user-email-display');
+    const navAuthBtn = document.getElementById('user-auth-nav-btn');
+    
+    if (user) {
+        if(accountSec) accountSec.classList.remove('hidden');
+        if(emailDisp) emailDisp.innerText = `Logged in: ${user.email}`;
+        if(navAuthBtn) navAuthBtn.innerText = `👤 ${user.displayName || 'PROFILE'}`;
+        
+        // यहाँ से आर्डर हिस्ट्री लोड कर सकते हैं
+        loadCustomerOrders(user.uid);
+    } else {
+        if(accountSec) accountSec.classList.add('hidden');
+        if(navAuthBtn) navAuthBtn.innerText = "🔑 LOGIN";
     }
 });
 
-// 📦 Supabase या Firebase से कस्टमर के ऑर्डर्स लाने का फंक्शन
+// ⚡ 4. आर्डर हिस्ट्री लोड करने की लॉजिक (Supabase/Firebase के साथ)
 async function loadCustomerOrders(userId) {
     const ordersList = document.getElementById('orders-list');
-    // यहाँ अपने डेटाबेस से ऑर्डर्स फेच करने का कोड डालें
-    // उदाहरण के लिए: 
-    // const { data: orders } = await supabase.from('orders').select('*').eq('user_id', userId);
+    if(!ordersList) return;
+    // नोट: यहाँ आप अपने सुपाबेस या फायरस्टोर से ऑर्डर्स लाकर इनरएचटीएमएल अपडेट कर सकते हैं
 }
 
-// 🚪 लॉगआउट फंक्शन
+// ⚡ 5. लॉगआउट एक्शन
 function logoutUser() {
     firebase.auth().signOut().then(() => {
-        alert("Logged out successfully!");
         window.location.reload();
     });
 }
+
+// 💡 निर्देश: जहाँ भी आपकी script.js में सजेशन प्रोडक्ट्स पर क्लिक करने का `onclick` फंक्शन (जैसे viewProduct details) बना हुआ है, उस फंक्शन के अंदर सबसे पहली लाइन में `fixSuggestionScroll();` को कॉल कर दें।
