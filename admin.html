@@ -97,13 +97,13 @@
 
                             <div class="space-y-1.5 border-t pt-2">
                                 <h4 class="text-[9px] uppercase text-emerald-500 font-bold">Primary Micro Asset Vector File/URL</h4>
-                                <input type="file" accept="image/*" onchange="convertFileToBase64(fileInput, 'prod-img1')" class="w-full text-[10px] text-gray-400">
+                                <input type="file" accept="image/*" onchange="convertFileToBase64(this, 'prod-img1')" class="w-full text-[10px] text-gray-400">
                                 <input type="text" id="prod-img1" placeholder="Or absolute asset url..." class="w-full p-1.5 border rounded">
                             </div>
 
                             <div class="space-y-1.5 border-t pt-2">
                                 <h4 class="text-[9px] uppercase text-emerald-500 font-bold">Secondary Asset Image Vector File/URL</h4>
-                                <input type="file" accept="image/*" onchange="convertFileToBase64(fileInput, 'prod-img2')" class="w-full text-[10px] text-gray-400">
+                                <input type="file" accept="image/*" onchange="convertFileToBase64(this, 'prod-img2')" class="w-full text-[10px] text-gray-400">
                                 <input type="text" id="prod-img2" placeholder="Or secondary asset url..." class="w-full p-1.5 border rounded">
                             </div>
 
@@ -127,17 +127,15 @@
                         <table class="w-full text-left text-xs">
                             <thead>
                                 <tr class="border-b text-[9px] font-bold text-gray-400 uppercase bg-gray-50">
-                                    <th class="py-2 px-2">Brand Channel & Variant Title</th>
-                                    <th class="py-2 px-2">Allocation</th>
-                                    <th class="py-2 px-2">Valuation</th>
-                                    <th class="py-2 text-right px-2">Actions Vector</th>
+                                    <th class="py-2 px-2" style="width: 50%;">Brand Channel & Variant Title</th>
+                                    <th class="py-2 px-2" style="width: 15%;">Allocation</th>
+                                    <th class="py-2 px-2" style="width: 15%;">Valuation</th>
+                                    <th class="py-2 text-right px-2" style="width: 20%;">Actions Vector</th>
                                 </tr>
                             </thead>
-                        </table>
-                        <div id="loading-log" class="text-center py-4 text-gray-400 hidden">Loading live vault systems...</div>
-                        <table class="w-full text-left text-xs">
                             <tbody id="catalog-table-body" class="divide-y font-medium text-gray-600"></tbody>
                         </table>
+                        <div id="loading-log" class="text-center py-4 text-gray-400 hidden">Loading live vault systems...</div>
                     </section>
                 </div>
 
@@ -149,6 +147,9 @@
         const SUPABASE_URL = "https://tkllbmlcsrcxdwpbbleb.supabase.co";
         const SUPABASE_KEY = "sb_publishable_CHZd1TBq8DzM-ZUfgQJpOA_Ukjmiv6V";
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // डेटा रेंडर करने के लिए एक ग्लोबल वेरिएबल ताकि इनलाइन कोट्स का इश्यू न आए
+        let localFetchedProducts = [];
 
         window.addEventListener('DOMContentLoaded', () => { renderCatalogTable(); });
 
@@ -162,42 +163,31 @@
 
         async function renderCatalogTable() {
             const tbody = document.getElementById('catalog-table-body');
-            tbody.innerHTML = '';
+            const loader = document.getElementById('loading-log');
+            if(tbody) tbody.innerHTML = '';
+            if(loader) loader.classList.remove('hidden');
             
             const { data: products, error } = await _supabase.from('products').select('*');
+            if(loader) loader.classList.add('hidden');
+            
             if (error) {
                 console.error(error);
                 return;
             }
 
-            products.forEach(p => {
+            localFetchedProducts = products || [];
+
+            localFetchedProducts.forEach((p, index) => {
                 const stockLabel = p.stockStatus === "out" ? "<span class='bg-red-50 text-red-600 px-1.5 py-0.5 rounded text-[8px] font-bold'>OUT</span>" : "<span class='bg-green-50 text-green-600 px-1.5 py-0.5 rounded text-[8px] font-bold'>LIVE</span>";
                 const rawPrice = p.price ? p.price.toString().replace(/[^\d]/g, '') : '0';
-                
-                let img1 = '', img2 = '';
-                if (p.images) {
-                    try {
-                        const parsed = typeof p.images === 'string' ? JSON.parse(p.images) : p.images;
-                        img1 = parsed[0] || '';
-                        img2 = parsed[1] || '';
-                    } catch(e) {
-                        img1 = p.images;
-                    }
-                }
-
-                const escapedName = (p.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                const escapedDesc = (p.desc || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                const escapedReviews = (p.reviewsText || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                const escapedBrand = (p.brand || '').replace(/'/g, "\\'");
-                const escapedCat = (p.category || '').replace(/'/g, "\\'");
 
                 tbody.innerHTML += `
                     <tr class="hover:bg-gray-50">
-                        <td class="py-2 px-2 font-bold text-gray-700 max-w-[180px] truncate"><b>[${p.brand}]</b> ${p.name}</td>
+                        <td class="py-2 px-2 font-bold text-gray-700 max-w-[180px] truncate"><b>[${p.brand || ''}]</b> ${p.name || ''}</td>
                         <td class="py-2 px-2">${stockLabel}</td>
                         <td class="py-2 px-2 font-black text-gray-900">₹${parseInt(rawPrice).toLocaleString('en-IN')}</td>
                         <td class="py-2 text-right px-2 space-x-2 font-bold text-[11px]">
-                            <button onclick="editProduct('${p.id}', '${escapedBrand}', '${escapedName}', '${escapedCat}', '${p.stockStatus || 'in'}', '${p.sizes || ''}', '${p.colors || ''}', '${rawPrice}', '${p.sizeChartImg || ''}', '${img1}', '${img2}', '${escapedDesc}', '${escapedReviews}')" class="text-blue-600 hover:underline">Edit</button>
+                            <button onclick="triggerEditMode(${index})" class="text-blue-600 hover:underline">Edit</button>
                             <button onclick="deleteProduct('${p.id}')" class="text-red-500 hover:underline">Delete</button>
                         </td>
                     </tr>
@@ -251,42 +241,54 @@
             alert('Database synchronized successfully!');
         }
 
-        function editProduct(id, brand, name, cat, stockStatus, sizes, colors, price, sizeChartImg, img1, img2, desc, reviewsText) {
-            document.getElementById('edit-id').value = id;
+        // कोट्स ब्रेकडाउन से बचने के लिए इंडेक्स आधारित एडिट ट्रिगर
+        function triggerEditMode(index) {
+            const p = localFetchedProducts[index];
+            if(!p) return;
+
+            document.getElementById('edit-id').value = p.id;
             
-            // मैच सुनिश्चित करने के लिए केस-सेंसिटिव चेक के साथ वैल्यू असाइन करें
             const brandSelect = document.getElementById('prod-brand');
-            brandSelect.value = brand;
-            if(!brandSelect.value && brand) {
-                // अगर डायरेक्ट मैच नहीं हुआ तो पहला अक्षर कैपिटल करके देखें
-                brandSelect.value = brand.charAt(0).toUpperCase() + brand.slice(1);
+            brandSelect.value = p.brand || 'Zara';
+            if(!brandSelect.value && p.brand) {
+                brandSelect.value = p.brand.charAt(0).toUpperCase() + p.brand.slice(1);
             }
 
             const catSelect = document.getElementById('prod-cat');
-            catSelect.value = cat;
-            if(!catSelect.value && cat) {
-                catSelect.value = cat.charAt(0).toUpperCase() + cat.slice(1);
+            catSelect.value = p.category || 'Shirts';
+            if(!catSelect.value && p.category) {
+                catSelect.value = p.category.charAt(0).toUpperCase() + p.category.slice(1);
             }
 
-            document.getElementById('prod-name').value = name;
+            document.getElementById('prod-name').value = p.name || '';
             
             const stockSelect = document.getElementById('prod-stock-status');
-            stockSelect.value = stockStatus || "in";
+            stockSelect.value = p.stockStatus || "in";
             stockSelect.className = stockSelect.value === 'out' ? 'w-full p-2 border rounded bg-white font-black text-red-600' : 'w-full p-2 border rounded bg-white font-black text-green-600';
 
-            document.getElementById('prod-sizes').value = sizes;
-            document.getElementById('prod-colors').value = colors;
-            document.getElementById('prod-price').value = price;
-            document.getElementById('prod-size-chart').value = sizeChartImg;
+            document.getElementById('prod-sizes').value = p.sizes || '';
+            document.getElementById('prod-colors').value = p.colors || '';
+            
+            const rawPrice = p.price ? p.price.toString().replace(/[^\d]/g, '') : '0';
+            document.getElementById('prod-price').value = rawPrice;
+            document.getElementById('prod-size-chart').value = p.sizeChartImg || '';
+            
+            let img1 = '', img2 = '';
+            if (p.images) {
+                try {
+                    const parsed = typeof p.images === 'string' ? JSON.parse(p.images) : p.images;
+                    img1 = parsed[0] || '';
+                    img2 = parsed[1] || '';
+                } catch(e) {
+                    img1 = p.images;
+                }
+            }
             document.getElementById('prod-img1').value = img1;
             document.getElementById('prod-img2').value = img2;
-            document.getElementById('prod-desc').value = desc;
-            document.getElementById('prod-reviews').value = reviewsText;
+            document.getElementById('prod-desc').value = p.desc || '';
+            document.getElementById('prod-reviews').value = p.reviewsText || '';
             
-            // बटन टेक्स्ट बदलें ताकि पता चले कि एडिट मोड चालू है
             document.getElementById('submit-btn').innerText = 'Update Catalog Item 🔄';
-            
-            // यूजर को दिखाने के लिए फॉर्म पर स्क्रॉल करें
             document.getElementById('product-form').scrollIntoView({ behavior: 'smooth' });
         }
 
