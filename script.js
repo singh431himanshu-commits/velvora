@@ -1,6 +1,6 @@
 // 1. Firebase Initialization (मैक्सी भाई की असली डिटेल्स)
 const firebaseConfig = {
-  apiKey: "AIzaSyCUVM7Qt11vselCetcnc3wk3Y73RQ0eml1",
+  apiKey: " AIzaSyCUVM7Qt11vselCetcnc3wk3Y73RQOemlI",
   authDomain: "velvora-5737c.firebaseapp.com",
   projectId: "velvora-5737c",
   storageBucket: "velvora-5737c.firebasestorage.app",
