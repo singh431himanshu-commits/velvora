@@ -251,6 +251,7 @@
     </div>
 
     <!-- 🔐 लॉगिन/रजिस्टर पॉपअप मॉडल -->
+     <!-- 🔐 लॉगिन/रजिस्टर पॉपअप मॉडल -->
     <div id="auth-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white max-w-sm w-full p-6 rounded-xl relative dark:bg-[#121212] border dark:border-gray-800 shadow-2xl">
             <button onclick="document.getElementById('auth-modal').classList.add('hidden')" class="absolute top-3 right-3 text-sm font-bold">✕</button>
@@ -270,19 +271,18 @@
                 <button onclick="handleForgotPassword()" class="text-[9px] text-gray-400 uppercase tracking-wider underline block text-right w-full hover:text-black dark:hover:text-white transition">Forgot Password?</button>
 
                 <div class="flex gap-2 pt-1">
-                    <button onclick="handleEmailAuth('signin')" class="w-1/2 bg-black text-white py-2.5 uppercase rounded text-[9px] tracking-wider font-black dark:bg-white dark:text-black">Sign In</button>
+                    <button onclick="handleEmailAuth('signin')" class="w-1/2 bg-black text-white py-2.5 uppercase rounded text-[9px] tracking-wider font-black dark:bg-white dark:text-black">Confirm Identity</button>
                     <button onclick="handleEmailAuth('signup')" class="w-1/2 bg-gray-200 text-black py-2.5 uppercase rounded text-[9px] tracking-wider font-black dark:bg-gray-700 dark:text-white">Sign Up</button>
                 </div>
             </div>
 
             <!-- ⚡ गूगल लॉगिन बटन -->
-             <!-- ⚡ सही किया गया गूगल लॉगिन बटन -->
-<div class="mt-4 border-t pt-4 dark:border-zinc-800">
-    <button type="button" onclick="loginWithGoogle()" class="w-full flex items-center justify-center gap-2.5 bg-white border border-gray-300 text-black font-black py-2 uppercase text-[10px] tracking-widest rounded-xs hover:bg-gray-50 transition shadow-xs">
-        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-4 h-4" alt="Google">
-        <span>Continue with Google</span>
-    </button>
-</div>
+            <div class="mt-4 border-t pt-4 dark:border-zinc-800">
+                <button type="button" onclick="loginWithGoogle()" class="w-full flex items-center justify-center gap-2.5 bg-white border border-gray-300 text-black font-black py-2 uppercase text-[10px] tracking-widest rounded-xs hover:bg-gray-50 transition shadow-xs">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-4 h-4" alt="Google">
+                    <span>Continue with Google</span>
+                </button>
+            </div>
         </div>
     </div>
 
