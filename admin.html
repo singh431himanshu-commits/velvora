@@ -45,7 +45,6 @@
                                         <option value="Nike">Nike Kinetics</option>
                                         <option value="Leather">Leather</option>
                                         <option value="PUMA">Puma</option>
-
                                         <option value="Velvora">Velvora Originals</option>
                                     </select>
                                 </div>
@@ -96,42 +95,37 @@
                                     <label class="block text-[9px] uppercase text-gray-400 mb-0.5">Size Chart Image Link</label>
                                     <input type="text" id="prod-size-chart" class="w-full p-2 border rounded" placeholder="https://url.jpg">
                                 </div>
-                                    <div>
-                                    <label class="block text-[9px] uppercase text-gray-400 mb-0.5">Size Chart Image Link</label>
-                                    <input type="text" id="prod-size-chart" class="w-full p-2 border rounded" placeholder="https://url.jpg">
-                                   </div>
-                                     
-                           
+                            </div>
 
+                            <!-- 🛠️ सीखें: सभी बॉक्सेस की IDs (prod-img1 से prod-img5) अब बिल्कुल यूनिक हैं -->
                             <div class="space-y-1.5 border-t pt-2">
-                                <h4 class="text-[9px] uppercase text-emerald-500 font-bold">Primary Micro Asset Vector File/URL</h4>
+                                <h4 class="text-[9px] uppercase text-emerald-500 font-bold">Primary Micro Asset Vector File/URL 1</h4>
                                 <input type="file" accept="image/*" onchange="convertFileToBase64(this, 'prod-img1')" class="w-full text-[10px] text-gray-400">
                                 <input type="text" id="prod-img1" placeholder="Or absolute asset url..." class="w-full p-1.5 border rounded">
                             </div>
 
-                                 <div class="space-y-1.5 border-t pt-2">
-                                <h4 class="text-[9px] uppercase text-emerald-500 font-bold">Primary Micro Asset Vector File/URL</h4>
+                            <div class="space-y-1.5 border-t pt-2">
+                                <h4 class="text-[9px] uppercase text-emerald-500 font-bold">Primary Micro Asset Vector File/URL 2</h4>
                                 <input type="file" accept="image/*" onchange="convertFileToBase64(this, 'prod-img2')" class="w-full text-[10px] text-gray-400">
-                                <input type="text" id="prod-img1" placeholder="Or absolute asset url..." class="w-full p-1.5 border rounded">
+                                <input type="text" id="prod-img2" placeholder="Or absolute asset url..." class="w-full p-1.5 border rounded">
                             </div>
                                 
-                                <div class="space-y-1.5 border-t pt-2">
-                                <h4 class="text-[9px] uppercase text-emerald-500 font-bold">Primary Micro Asset Vector File/URL</h4>
+                            <div class="space-y-1.5 border-t pt-2">
+                                <h4 class="text-[9px] uppercase text-emerald-500 font-bold">Primary Micro Asset Vector File/URL 3</h4>
                                 <input type="file" accept="image/*" onchange="convertFileToBase64(this, 'prod-img3')" class="w-full text-[10px] text-gray-400">
-                                <input type="text" id="prod-img1" placeholder="Or absolute asset url..." class="w-full p-1.5 border rounded">
+                                <input type="text" id="prod-img3" placeholder="Or absolute asset url..." class="w-full p-1.5 border rounded">
                             </div>
-
-                                 <div class="space-y-1.5 border-t pt-2">
-                                <h4 class="text-[9px] uppercase text-emerald-500 font-bold">Primary Micro Asset Vector File/URL</h4>
-                                <input type="file" accept="image/*" onchange="convertFileToBase64(this, 'prod-img4')" class="w-full text-[10px] text-gray-400">
-                                <input type="text" id="prod-img1" placeholder="Or absolute asset url..." class="w-full p-1.5 border rounded">
-                            </div>
-                                
 
                             <div class="space-y-1.5 border-t pt-2">
-                                <h4 class="text-[9px] uppercase text-emerald-500 font-bold">Secondary Asset Image Vector File/URL</h4>
+                                <h4 class="text-[9px] uppercase text-emerald-500 font-bold">Primary Micro Asset Vector File/URL 4</h4>
+                                <input type="file" accept="image/*" onchange="convertFileToBase64(this, 'prod-img4')" class="w-full text-[10px] text-gray-400">
+                                <input type="text" id="prod-img4" placeholder="Or absolute asset url..." class="w-full p-1.5 border rounded">
+                            </div>
+
+                            <div class="space-y-1.5 border-t pt-2">
+                                <h4 class="text-[9px] uppercase text-emerald-500 font-bold">Secondary Asset Image Vector File/URL 5</h4>
                                 <input type="file" accept="image/*" onchange="convertFileToBase64(this, 'prod-img5')" class="w-full text-[10px] text-gray-400">
-                                <input type="text" id="prod-img2" placeholder="Or secondary asset url..." class="w-full p-1.5 border rounded">
+                                <input type="text" id="prod-img5" placeholder="Or secondary asset url..." class="w-full p-1.5 border rounded">
                             </div>
 
                             <div>
@@ -159,7 +153,7 @@
                                     <th class="py-2 px-2" style="width: 15%;">Valuation</th>
                                     <th class="py-2 text-right px-2" style="width: 20%;">Actions Vector</th>
                                 </tr>
-                            </thead>
+                            </table>
                             <tbody id="catalog-table-body" class="divide-y font-medium text-gray-600"></tbody>
                         </table>
                         <div id="loading-log" class="text-center py-4 text-gray-400 hidden">Loading live vault systems...</div>
@@ -179,14 +173,11 @@
 
         window.addEventListener('DOMContentLoaded', () => { 
             renderCatalogTable(); 
-            
-            // इतिहास में स्टेट सेट करें
             if (!history.state || history.state.page !== 'admin') {
                 history.replaceState({ page: 'admin' }, '', window.location.pathname);
             }
         });
 
-        // बैक बटन एरर 404 फिक्स का पुख्ता इलाज
         window.addEventListener('popstate', (event) => {
             window.location.href = "velvora.html";
         });
@@ -244,8 +235,17 @@
             const colors = document.getElementById('prod-colors').value;
             const price = document.getElementById('prod-price').value.trim();
             const sizeChartImg = document.getElementById('prod-size-chart').value.trim();
+            
+            // 🛠️ सीखें: यहाँ अब जावास्क्रिप्ट पांचों बॉक्सेस से वैल्यू उठा रही है
             const img1 = document.getElementById('prod-img1').value.trim();
             const img2 = document.getElementById('prod-img2').value.trim();
+            const img3 = document.getElementById('prod-img3').value.trim();
+            const img4 = document.getElementById('prod-img4').value.trim();
+            const img5 = document.getElementById('prod-img5').value.trim();
+            
+            // केवल वैलिड लिंक्स को फिल्टर कर के एरे (Array) तैयार करना
+            const finalImagesArray = [img1, img2, img3, img4, img5].filter(url => url !== "");
+
             const desc = document.getElementById('prod-desc').value.trim();
             const reviewsText = document.getElementById('prod-reviews').value.trim();
 
@@ -255,7 +255,7 @@
                 category: cat, 
                 stockStatus, 
                 price, 
-                images: JSON.stringify([img1, img2]), 
+                images: JSON.stringify(finalImagesArray), // ⚡ सीखें: अब पूरा एरे डेटाबेस में सेव होगा
                 desc, 
                 sizes, 
                 colors, 
@@ -310,18 +310,28 @@
             document.getElementById('prod-price').value = rawPrice;
             document.getElementById('prod-size-chart').value = p.sizeChartImg || '';
             
-            let img1 = '', img2 = '';
+            // एडिट मोड में पांचों इमेजेस को वापस डिब्बों में भरना
+            document.getElementById('prod-img1').value = '';
+            document.getElementById('prod-img2').value = '';
+            document.getElementById('prod-img3').value = '';
+            document.getElementById('prod-img4').value = '';
+            document.getElementById('prod-img5').value = '';
+            
             if (p.images) {
                 try {
                     const parsed = typeof p.images === 'string' ? JSON.parse(p.images) : p.images;
-                    img1 = parsed[0] || '';
-                    img2 = parsed[1] || '';
+                    if(Array.isArray(parsed)) {
+                        if(parsed[0]) document.getElementById('prod-img1').value = parsed[0];
+                        if(parsed[1]) document.getElementById('prod-img2').value = parsed[1];
+                        if(parsed[2]) document.getElementById('prod-img3').value = parsed[2];
+                        if(parsed[3]) document.getElementById('prod-img4').value = parsed[3];
+                        if(parsed[4]) document.getElementById('prod-img5').value = parsed[4];
+                    }
                 } catch(e) {
-                    img1 = p.images;
+                    document.getElementById('prod-img1').value = p.images;
                 }
             }
-            document.getElementById('prod-img1').value = img1;
-            document.getElementById('prod-img2').value = img2;
+            
             document.getElementById('prod-desc').value = p.desc || '';
             document.getElementById('prod-reviews').value = p.reviewsText || '';
             
