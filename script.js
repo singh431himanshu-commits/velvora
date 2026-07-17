@@ -334,7 +334,21 @@ function closeSizeChartModal() {
 } 
 
 // ⚡ सुरक्षा ऑब्जर्वर: ईमेल वेरिफिकेशन स्टेटस चेक + एडमिन अकाउंट सिंगल-लॉगिन प्रोटेक्शन
+// ⚡ अपडेटेड सुरक्षा ऑब्जर्वर: गूगल रीडायरेक्ट रिज़ल्ट को हैंडल करने के साथ
 function setupAuthObserver() {
+    // 1. गूगल लॉगिन से रीडायरेक्ट होकर वापस आने वाले डेटा को कैच करना
+    firebase.auth().getRedirectResult()
+        .then((result) => {
+            if (result.user) {
+                alert(`🎉 स्वागत है ${result.user.displayName || 'यूजर'}!`);
+                closeAuthModal();
+            }
+        })
+        .catch((error) => {
+            console.error("Redirect Auth Error:", error);
+        });
+
+    // 2. रेगुलर स्टेट ऑब्जर्वर
     firebase.auth().onAuthStateChanged(async (user) => {
         const accountSec = document.getElementById('account-section');
         const emailDisp = document.getElementById('user-email-display');
