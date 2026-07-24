@@ -1,9 +1,9 @@
 // 1. Firebase Initialization (मैक्सी भाई की असली डिटेल्स)
 const firebaseConfig = { 
   apiKey: "AIzaSyCUVM7Qt11vselCetcnc3wk3Y73RQOemlI", 
-  authDomain: "velvora-5737c.web.app", // ⚡ 'firebaseapp.com' को बदलकर 'web.app' कर दिया ताकि गिटहब इसे ब्लॉक न करे
-  projectId: "velvora-5737c", 
-  storageBucket: "velvora-5737c.firebasestorage.app", 
+  authDomain: "ZYLOR-5737c.web.app", // ⚡ 'firebaseapp.com' को बदलकर 'web.app' कर दिया ताकि गिटहब इसे ब्लॉक न करे
+  projectId: "ZYLOR-5737c", 
+  storageBucket: "ZYLOR-5737c.firebasestorage.app", 
   messagingSenderId: "945792570282", 
   appId: "1:945792570282:web:5217a50aa347ca1bd311d319e", 
   measurementId: "G-P0F5B0EFT1" 
@@ -18,7 +18,7 @@ const SUPABASE_KEY = "sb_publishable_CHZd1TBq8DzM-ZUfgQJpOA_Ukjmiv6V";
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY); 
 
 let cart = []; 
-let wishlist = JSON.parse(localStorage.getItem('velvora_wishlist')) || []; 
+let wishlist = JSON.parse(localStorage.getItem('ZYLOR_wishlist')) || []; 
 let selectedSize = null; 
 let selectedColor = null; 
 let currentProductPhotos = []; 
@@ -111,9 +111,9 @@ function showHomepage() {
 function toggleDarkMode() { 
     document.documentElement.classList.toggle('dark');
     if(document.documentElement.classList.contains('dark')) {
-        localStorage.setItem('velvora_theme', 'dark');
+        localStorage.setItem('ZYLOR_theme', 'dark');
     } else {
-        localStorage.setItem('velvora_theme', 'light');
+        localStorage.setItem('ZYLOR_theme', 'light');
     }
 } 
 
@@ -132,7 +132,7 @@ function filterCategory(brandName) {
 } 
 
 function getAiSortedProducts(list) { 
-    let interest = JSON.parse(localStorage.getItem('velvora_ai_interest')) || {}; 
+    let interest = JSON.parse(localStorage.getItem('ZYLOR_ai_interest')) || {}; 
     return list.sort((a, b) => { 
         let scoreA = (interest[a.category.toLowerCase()] || 0) + (interest[a.brand.toLowerCase()] || 0); 
         let scoreB = (interest[b.category.toLowerCase()] || 0) + (interest[b.brand.toLowerCase()] || 0); 
@@ -189,10 +189,10 @@ function openProduct(id) {
     const p = getProducts().find(prod => prod.id == id); 
     if(!p) return; 
 
-    let interest = JSON.parse(localStorage.getItem('velvora_ai_interest')) || {}; 
+    let interest = JSON.parse(localStorage.getItem('ZYLOR_ai_interest')) || {}; 
     interest[p.category.toLowerCase()] = (interest[p.category.toLowerCase()] || 0) + 1; 
     interest[p.brand.toLowerCase()] = (interest[p.brand.toLowerCase()] || 0) + 1; 
-    localStorage.setItem('velvora_ai_interest', JSON.stringify(interest)); 
+    localStorage.setItem('ZYLOR_ai_interest', JSON.stringify(interest)); 
 
     currentProductPhotos = p.images || []; 
     selectedSize = null;  
@@ -501,7 +501,7 @@ async function saveUniqueUsername() {
 function executeProfileLogout() { 
     firebase.auth().signOut().then(() => {
         currentUser = null;
-        localStorage.removeItem('velvora_current_user');
+        localStorage.removeItem('ZYLOR_current_user');
         window.location.reload();
     });
 } 
@@ -586,7 +586,7 @@ function finalizeStepOrder() {
     sales.totalOrders += 1; 
     localStorage.setItem('nexwear_sales', JSON.stringify(sales)); 
 
-    const finalMsg = `*🚨 NEW CAPSULE ORDER SUBMISSION [VELVORA INC]*\n\n*Order Identification Trace:* ${orderId}\n*Customer Auth Trace:* ${currentUser}\n\n*Item Vector Structure:*\n${window.checkoutItemDetails}\n\n*Shipping Track Target:*\n${window.checkoutAddressString}\n\n*Payment Strategic Mode:* ${selectedPay}`; 
+    const finalMsg = `*🚨 NEW CAPSULE ORDER SUBMISSION [ZYLOR INC]*\n\n*Order Identification Trace:* ${orderId}\n*Customer Auth Trace:* ${currentUser}\n\n*Item Vector Structure:*\n${window.checkoutItemDetails}\n\n*Shipping Track Target:*\n${window.checkoutAddressString}\n\n*Payment Strategic Mode:* ${selectedPay}`; 
      
     closeCheckoutModal(); 
     cart = []; 
